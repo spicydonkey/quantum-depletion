@@ -58,6 +58,49 @@ if verbose>1
 end
 
 
+%% Take 1D slice
+zxy_slice=cell(nShot,1);
+for i=1:nShot
+    zxy_slice{i}=cylindercull(zxy_0{i},configs.slice.cyl_cent,...
+        configs.slice.cyl_dim,configs.slice.cyl_orient);
+end
+
+% Plot 1D slice point cloud
+if verbose>1
+    h_zxy_slice=figure();
+    plot_zxy(zxy_slice,100,'k');
+    title('1D sampled condensate point cloud');
+    xlabel('X [m]'); ylabel('Y [m]'); zlabel('Z [m]');
+    view(3);
+    axis equal;
+    
+    % save plot
+    fname_str='zxy_slice';
+    saveas(h_zxy_slice,[configs.files.dirout,fname_str,'.png']);
+    saveas(h_zxy_slice,[configs.files.dirout,fname_str,'.fig']);
+end
+
+%% Plot summary
+h_zxy_summ=figure();
+nShotSumm=50;   % number of shots to plot as summary
+if nShot<nShotSumm
+    nShotSumm=nShot;
+end
+plot_zxy(zxy_0(1:nShotSumm),10,'r');
+hold on;
+plot_zxy(zxy_slice(1:nShotSumm),300,'b');
+
+title('Summary - Condensate point cloud');
+xlabel('X [m]'); ylabel('Y [m]'); zlabel('Z [m]');
+view(3);
+axis equal;
+
+% save plot
+fname_str='zxy_summ';
+saveas(h_zxy_summ,[configs.files.dirout,fname_str,'.png']);
+saveas(h_zxy_summ,[configs.files.dirout,fname_str,'.fig']);
+
+
 %% far-field momentum distribution
 k_ff=abs(vertcat(zxy_0{:}));     % collate all shots and convert to abs(k)-space (TODO)
 hist_nbin=configs.nbin;         % number of bins to use for histogramming
