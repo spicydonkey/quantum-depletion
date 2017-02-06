@@ -32,6 +32,8 @@ m_He=configs.const.m_He;
 tof=configs.const.tof;
 vz=9.8*tof;     % atom free-fall vert v at detector hit for T-to-Z conversion;
 
+% Load project specific params
+hist_nbin=configs.nbin;         % number of bins to use for histogramming
 
 %%% Pre-processing raw data
 txy_0=cell(nShot,1);    % oscillation compensated txy counts
@@ -105,131 +107,186 @@ saveas(h_zxy_summ,[configs.files.dirout,fname_str,'.png']);
 saveas(h_zxy_summ,[configs.files.dirout,fname_str,'.fig']);
 
 
-%% Momentum conversion
+%% Density profiling
+r_1D=abs(vertcat(zxy_slice{:}));
+r_1D=r_1D(:,configs.slice.cyl_orient);      % 1D squeezed data in real-space
+
+%%% LINEAR DIST
+[N_r1D,ed_r1D]=histcounts(r_1D,hist_nbin);  % lin hist
+
+% number to density
+area_perp_1D=pi*(configs.slice.cyl_rad^2);  % area of integrated dims
+n_r1D=N_r1D./(diff(ed_r1D)*area_perp_1D);   % number density [m^-3]
+
+n_kff=(hbar*tof/m_He)^3*n_r1D;  % number density (real space) to far-field momentum density
 
 
+%%% LOG DIST
+log_r_1D=real(log(r_1D));   % convert to log space
+[N_lgr1D,ed_lgr1D]=histcounts(log_r_1D,hist_nbin);
+dr1D=exp(ed_lgr1D(2:end))-exp(ed_lgr1D(1:end-1));   % hist bin width in 1D
+n_lgr1D=N_lgr1D./(dr1D*area_perp_1D);       % number density [m^-3]
+
+n_kff_lg=(hbar*tof/m_He)^3*n_lgr1D; % ff momentum density
+
+
+
+%% Plot density profiles
+% real space density dist
+h_nr1D=figure();
+plot(1e3*(ed_r1D(1:end-1)+ed_r1D(2:end))/2,...
+    1e-9*n_r1D,'--');
+title('1D condensate number profile');
+xlabel('$r$ [mm]'); ylabel('$n(r,\overline{t})$ [mm$^{-3}$]');
+
+fname_str='nr1D';
+saveas(h_nr1D,[configs.files.dirout,fname_str,'.png']);
+saveas(h_nr1D,[configs.files.dirout,fname_str,'.fig']);
+
+% far-field momentum space (lin)
+h_nkff=figure();
+ed_kff=(m_He/(hbar*tof))*ed_r1D;
+plot(1e-6*(ed_kff(1:end-1)+ed_kff(2:end))/2,...
+    1e18*n_kff,'-');
+title('1D condensate momentum profile');
+xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
+
+fname_str='nkff';
+saveas(h_nkff,[configs.files.dirout,fname_str,'.png']);
+saveas(h_nkff,[configs.files.dirout,fname_str,'.fig']);
+
+% far-field momentum space (log)
+h_nkff_log=figure();
+ed_kff_log=(m_He/(hbar*tof))*exp(ed_lgr1D);
+loglog(1e-6*(ed_kff_log(1:end-1)+ed_kff_log(2:end))/2,...
+    1e18*n_kff_lg,'--');
+title('1D condensate momentum profile');
+xlabel('$k$ [m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
+
+fname_str='nkff_log';
+saveas(h_nkff_log,[configs.files.dirout,fname_str,'.png']);
+saveas(h_nkff_log,[configs.files.dirout,fname_str,'.fig']);
 
 %% far-field momentum distribution
-k_ff=abs(vertcat(zxy_0{:}));     % collate all shots and convert to abs(k)-space (TODO)
-hist_nbin=configs.nbin;         % number of bins to use for histogramming
-
-% Radial (ZY plane)
-k_rad=k_ff(:,[1,3]);
-log_k_rad=real(log(k_rad));   % get log dist
-
-[N_hist_krad,ed_hist_krad]=histcounts(k_rad,hist_nbin);       % lin hist
-[N_hist_lgkrad,ed_hist_lgkrad]=histcounts(log_k_rad,hist_nbin);   % log hist
-
-% Longitudinal (X-axis)
-k_lon=k_ff(:,2);
-log_k_lon=real(log(k_lon));   % get log dist
-
-[N_hist_klon,ed_hist_klon]=histcounts(k_lon,hist_nbin);   % lin hist
-[N_hist_lgklon,ed_hist_lgklon]=histcounts(log_k_lon,hist_nbin);  % log hist
-
-%%% number to density conversion
-% TODO: scale to 1D
-% linear bin
-n_hist_krad=N_hist_krad./diff(ed_hist_krad);    %currently [m-1]
-n_hist_klon=N_hist_klon./diff(ed_hist_klon);
-
-% logarithmic bin
-n_hist_lgkrad=N_hist_lgkrad./(exp(ed_hist_lgkrad(2:end))-exp(ed_hist_lgkrad(1:end-1)));
-n_hist_lgklon=N_hist_lgklon./(exp(ed_hist_lgklon(2:end))-exp(ed_hist_lgklon(1:end-1)));
-
-% Plot
-%%% Linear r histogram
-h_hist_r=figure();
-hold on;
-plot((ed_hist_krad(1:end-1)+ed_hist_krad(2:end))/2,...
-    N_hist_krad,'--');
-plot((ed_hist_klon(1:end-1)+ed_hist_klon(2:end))/2,...
-    N_hist_klon,'-');
-
-legend({'Radial','Longitudinal'});
-title('1D condensate number profile (linear)');
-xlabel('$r$ [m]'); ylabel('$N(r)$');
-
-% save plot
-fname_str='hist_k';
-saveas(h_hist_r,[configs.files.dirout,fname_str,'.png']);
-saveas(h_hist_r,[configs.files.dirout,fname_str,'.fig']);
-
-%%% linear r density
-h_nr=figure();
-hold on;
-plot((ed_hist_krad(1:end-1)+ed_hist_krad(2:end))/2,...
-    n_hist_krad,'--');
-plot((ed_hist_klon(1:end-1)+ed_hist_klon(2:end))/2,...
-    n_hist_klon,'-');
-
-legend({'Radial','Longitudinal'});
-title('1D condensate density profile (linear)');
-xlabel('$r$ [m$^{-1}$]'); ylabel('$n(r)$');
-
-% save plot
-fname_str='nr';
-saveas(h_nr,[configs.files.dirout,fname_str,'.png']);
-saveas(h_nr,[configs.files.dirout,fname_str,'.fig']);
-
-
-%%% loglog r histogram
-% Radial
-h_hist_lgkrad=figure();
-loglog((ed_hist_lgkrad(1:end-1)+ed_hist_lgkrad(2:end))/2,...
-    N_hist_lgkrad,'--');
-
-title('1D radial condensate number profile (log-log)');
-xlabel('$r$ [m]'); ylabel('$N(r)$');
-axis tight;
-
-% save plot
-fname_str='hist_lgkrad';
-saveas(h_hist_lgkrad,[configs.files.dirout,fname_str,'.png']);
-saveas(h_hist_lgkrad,[configs.files.dirout,fname_str,'.fig']);
-
-% Longitudinal
-h_hist_lgklon=figure();
-loglog((ed_hist_lgklon(1:end-1)+ed_hist_lgklon(2:end))/2,...
-    N_hist_lgklon,'-');
-
-title('1D longitudinal condensate number profile (log-log)');
-xlabel('$r$ [m]'); ylabel('$N(r)$');
-axis tight;
-
-% save plot
-fname_str='hist_lgklon';
-saveas(h_hist_lgklon,[configs.files.dirout,fname_str,'.png']);
-saveas(h_hist_lgklon,[configs.files.dirout,fname_str,'.fig']);
-
-%%% log r density
-% Radial
-h_n_lgkrad=figure();
-loglog((ed_hist_lgkrad(1:end-1)+ed_hist_lgkrad(2:end))/2,...
-    n_hist_lgkrad,'--');
-
-title('1D radial condensate density profile');
-xlabel('$r$ [m]'); ylabel('$n(r)$ [m$^{-1}$]');
-axis tight;
-
-% save plot
-fname_str='n_lgkrad';
-saveas(h_n_lgkrad,[configs.files.dirout,fname_str,'.png']);
-saveas(h_n_lgkrad,[configs.files.dirout,fname_str,'.fig']);
-
-% Longitudinal
-h_n_lgklon=figure();
-loglog((ed_hist_lgklon(1:end-1)+ed_hist_lgklon(2:end))/2,...
-    n_hist_lgklon,'-');
-
-title('1D longitudinal condensate density profile');
-xlabel('$r$ [m]'); ylabel('$n(r)$ [m$^{-1}$]');
-axis tight;
-
-% save plot
-fname_str='n_lgklon';
-saveas(h_n_lgklon,[configs.files.dirout,fname_str,'.png']);
-saveas(h_n_lgklon,[configs.files.dirout,fname_str,'.fig']);
+% k_ff=abs(vertcat(zxy_0{:}));     % collate all shots and convert to abs(k)-space (TODO)
+% 
+% % Radial (ZY plane)
+% k_rad=k_ff(:,[1,3]);
+% log_k_rad=real(log(k_rad));   % get log dist
+% 
+% [N_hist_krad,ed_hist_krad]=histcounts(k_rad,hist_nbin);       % lin hist
+% [N_hist_lgkrad,ed_hist_lgkrad]=histcounts(log_k_rad,hist_nbin);   % log hist
+% 
+% % Longitudinal (X-axis)
+% k_lon=k_ff(:,2);
+% log_k_lon=real(log(k_lon));   % get log dist
+% 
+% [N_hist_klon,ed_hist_klon]=histcounts(k_lon,hist_nbin);   % lin hist
+% [N_hist_lgklon,ed_hist_lgklon]=histcounts(log_k_lon,hist_nbin);  % log hist
+% 
+% %%% number to density conversion
+% % TODO: scale to 1D
+% % linear bin
+% n_hist_krad=N_hist_krad./diff(ed_hist_krad);    %currently [m-1]
+% n_hist_klon=N_hist_klon./diff(ed_hist_klon);
+% 
+% % logarithmic bin
+% n_hist_lgkrad=N_hist_lgkrad./(exp(ed_hist_lgkrad(2:end))-exp(ed_hist_lgkrad(1:end-1)));
+% n_hist_lgklon=N_hist_lgklon./(exp(ed_hist_lgklon(2:end))-exp(ed_hist_lgklon(1:end-1)));
+% 
+% % Plot
+% %%% Linear r histogram
+% h_hist_r=figure();
+% hold on;
+% plot((ed_hist_krad(1:end-1)+ed_hist_krad(2:end))/2,...
+%     N_hist_krad,'--');
+% plot((ed_hist_klon(1:end-1)+ed_hist_klon(2:end))/2,...
+%     N_hist_klon,'-');
+% 
+% legend({'Radial','Longitudinal'});
+% title('1D condensate number profile (linear)');
+% xlabel('$r$ [m]'); ylabel('$N(r)$');
+% 
+% % save plot
+% fname_str='hist_k';
+% saveas(h_hist_r,[configs.files.dirout,fname_str,'.png']);
+% saveas(h_hist_r,[configs.files.dirout,fname_str,'.fig']);
+% 
+% %%% linear r density
+% h_nr=figure();
+% hold on;
+% plot((ed_hist_krad(1:end-1)+ed_hist_krad(2:end))/2,...
+%     n_hist_krad,'--');
+% plot((ed_hist_klon(1:end-1)+ed_hist_klon(2:end))/2,...
+%     n_hist_klon,'-');
+% 
+% legend({'Radial','Longitudinal'});
+% title('1D condensate density profile (linear)');
+% xlabel('$r$ [m$^{-1}$]'); ylabel('$n(r)$');
+% 
+% % save plot
+% fname_str='nr';
+% saveas(h_nr,[configs.files.dirout,fname_str,'.png']);
+% saveas(h_nr,[configs.files.dirout,fname_str,'.fig']);
+% 
+% 
+% %%% loglog r histogram
+% % Radial
+% h_hist_lgkrad=figure();
+% loglog((ed_hist_lgkrad(1:end-1)+ed_hist_lgkrad(2:end))/2,...
+%     N_hist_lgkrad,'--');
+% 
+% title('1D radial condensate number profile (log-log)');
+% xlabel('$r$ [m]'); ylabel('$N(r)$');
+% axis tight;
+% 
+% % save plot
+% fname_str='hist_lgkrad';
+% saveas(h_hist_lgkrad,[configs.files.dirout,fname_str,'.png']);
+% saveas(h_hist_lgkrad,[configs.files.dirout,fname_str,'.fig']);
+% 
+% % Longitudinal
+% h_hist_lgklon=figure();
+% loglog((ed_hist_lgklon(1:end-1)+ed_hist_lgklon(2:end))/2,...
+%     N_hist_lgklon,'-');
+% 
+% title('1D longitudinal condensate number profile (log-log)');
+% xlabel('$r$ [m]'); ylabel('$N(r)$');
+% axis tight;
+% 
+% % save plot
+% fname_str='hist_lgklon';
+% saveas(h_hist_lgklon,[configs.files.dirout,fname_str,'.png']);
+% saveas(h_hist_lgklon,[configs.files.dirout,fname_str,'.fig']);
+% 
+% %%% log r density
+% % Radial
+% h_n_lgkrad=figure();
+% loglog((ed_hist_lgkrad(1:end-1)+ed_hist_lgkrad(2:end))/2,...
+%     n_hist_lgkrad,'--');
+% 
+% title('1D radial condensate density profile');
+% xlabel('$r$ [m]'); ylabel('$n(r)$ [m$^{-1}$]');
+% axis tight;
+% 
+% % save plot
+% fname_str='n_lgkrad';
+% saveas(h_n_lgkrad,[configs.files.dirout,fname_str,'.png']);
+% saveas(h_n_lgkrad,[configs.files.dirout,fname_str,'.fig']);
+% 
+% % Longitudinal
+% h_n_lgklon=figure();
+% loglog((ed_hist_lgklon(1:end-1)+ed_hist_lgklon(2:end))/2,...
+%     n_hist_lgklon,'-');
+% 
+% title('1D longitudinal condensate density profile');
+% xlabel('$r$ [m]'); ylabel('$n(r)$ [m$^{-1}$]');
+% axis tight;
+% 
+% % save plot
+% fname_str='n_lgklon';
+% saveas(h_n_lgklon,[configs.files.dirout,fname_str,'.png']);
+% saveas(h_n_lgklon,[configs.files.dirout,fname_str,'.fig']);
 
 
 %% Save data
