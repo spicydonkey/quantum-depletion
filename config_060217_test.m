@@ -21,6 +21,12 @@ configs.window{2}=[-35e-3,30e-3];    % X [m]
 configs.window{3}=[-40e-3,28e-3];    % Y [m]
 
 
+%%% Experimental consts 
+configs.const.hbar=1.05457e-34;     % hbar [m^2kg/s]
+configs.const.m_He=6.646476e-27;    % mass of helium (kg)
+configs.const.tof=0.430;    % TOF for free-fall from trap to DLD
+
+
 %% Quantum depletion specific
 %%% 1D slice
 % counts captured along a 1D line-slice from well "below" condensate to centre
@@ -35,9 +41,8 @@ configs.slice.cyl_dim=[configs.slice.cyl_rad,configs.slice.cyl_hgt];
 configs.slice.cyl_cent=zeros(1,3);
 configs.slice.cyl_cent(configs.slice.cyl_orient)=-0.5*configs.slice.cyl_hgt;
 
-
 %%% HISTOGRAMMING
-configs.nbin=1000;
+configs.nbin=100;
 
 
 %% ALGORITHM CONFIGS
