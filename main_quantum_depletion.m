@@ -3,9 +3,6 @@
 
 clear all; close all; clc;
 
-%%% Constants
-tof_vz=9.8*0.430;    % atom free-fall vert v at detector hit for T-to-Z conversion;
-
 %%% USER INPUTS
 path_config='C:\Users\HE BEC\Documents\MATLAB\quantum-depletion\config_060217_test.m';
 
@@ -29,6 +26,13 @@ run(path_config);
 [txy_raw,files_out]=loadExpData(configs,verbose);
 nShot=size(txy_raw,1);
 
+% Load misc params
+hbar=configs.const.hbar;
+m_He=configs.const.m_He;
+tof=configs.const.tof;
+vz=9.8*tof;     % atom free-fall vert v at detector hit for T-to-Z conversion;
+
+
 %%% Pre-processing raw data
 txy_0=cell(nShot,1);    % oscillation compensated txy counts
 zxy_0=cell(nShot,1);    % T-Z conversion
@@ -39,7 +43,7 @@ for i=1:nShot
     
     % T-Z conversion
     zxy_0{i}=txy_0{i};
-    zxy_0{i}(:,1)=zxy_0{i}(:,1)*tof_vz;    % TOF - dz at time of detection
+    zxy_0{i}(:,1)=zxy_0{i}(:,1)*vz;    % TOF - dz at time of detection
 end
 
 % Plot far-field ZXY
@@ -99,6 +103,10 @@ axis equal;
 fname_str='zxy_summ';
 saveas(h_zxy_summ,[configs.files.dirout,fname_str,'.png']);
 saveas(h_zxy_summ,[configs.files.dirout,fname_str,'.fig']);
+
+
+%% Momentum conversion
+
 
 
 %% far-field momentum distribution
