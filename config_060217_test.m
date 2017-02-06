@@ -7,7 +7,7 @@ verbose=1;
 %%% Raw data handling
 % files -  data file
 configs.files.path='C:\Users\HE BEC\Documents\lab\quantum-depletion\exp1\d';    % path to unindexed data file (e.g. 'a\b\datadir\$DATA_FNAME_TOKEN$')
-configs.files.id=1:1500;          % file id numbers to use for analysis
+configs.files.id=1:500;          % file id numbers to use for analysis
 configs.files.minCount=100;     % min counts to use for analysis
 
 
@@ -21,11 +21,26 @@ configs.window{2}=[-35e-3,30e-3];    % X [m]
 configs.window{3}=[-40e-3,28e-3];    % Y [m]
 
 
+%% Quantum depletion specific
+%%% 1D slice
+% counts captured along a 1D line-slice from well "below" condensate to centre
+configs.slice.cyl_orient=1;     % slice through Z-axis (1:Z,2:X,3:Y)
+configs.slice.cyl_rad=10e-4;     % cyl radius [m]
+configs.slice.cyl_hgt=50e-3;    % cyl height [m]
+
+% build cylinder dim
+configs.slice.cyl_dim=[configs.slice.cyl_rad,configs.slice.cyl_hgt];
+
+% build cylinder centre such that slice ends at condensate centre
+configs.slice.cyl_cent=zeros(1,3);
+configs.slice.cyl_cent(configs.slice.cyl_orient)=-0.5*configs.slice.cyl_hgt;
+
+
 %%% HISTOGRAMMING
 configs.nbin=1000;
 
 
-%%% ALGORITHM CONFIGS
+%% ALGORITHM CONFIGS
 % DO NOT ADJUST
 configs.files.saveddata=[configs.files.path,'_data.mat'];     % path to store saved data
 configs.files.archive=[configs.files.path,'_archive'];   % dir to archive folder
