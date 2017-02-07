@@ -9,19 +9,10 @@ path_config='C:\Users\HE BEC\Documents\MATLAB\quantum-depletion\config_060217_te
 % vars to save to output
 vars_save={'path_config',...
     'zxy_0','files_out',...
-    'k_ff',...
-    'N_hist_krad','ed_hist_krad',...
-    'N_hist_lgkrad','ed_hist_lgkrad',...
-    'N_hist_klon','ed_hist_klon',...
-    'N_hist_lgklon','ed_hist_lgklon',...
-    'n_hist_krad','n_hist_klon',...
     'zxy_slice','r_1D',...
     'N_r1D','ed_r1D',...
     'area_perp_1D',...
     'n_r1D','n_kff',...
-    'log_r_1D','N_lgr1D','ed_lgr1D',...
-    'dr1D','n_lgr1D','n_kff_lg',...
-    'ed_kff','ed_kff_log',...
     };
 
 
@@ -184,36 +175,10 @@ if verbose>0	% plot
     saveas(h_nkff,[configs.files.dirout,fname_str,'.fig']);
 end
 
-% %%% LOG DIST (Method 1)
-% % NOTE: bin-edges are assigned automatically using lims of data
-% log_r_1D=real(log(r_1D));   % convert to log space
-% [N_lgr1D,ed_lgr1D]=histcounts(log_r_1D,hist_nbin);
-% N_lgr1D=N_lgr1D/(nShot*detQE);      % normalise for single shot and detector QE
-% dr1D=exp(ed_lgr1D(2:end))-exp(ed_lgr1D(1:end-1));   % hist bin width in 1D
-% n_lgr1D=N_lgr1D./(dr1D*area_perp_1D);       % number density [m^-3]
-% 
-% n_kff_lg=(hbar*tof/m_He)^3*n_lgr1D; % ff momentum density
-% 
-% if verbose>0    % plot
-%     % far-field momentum space (log)
-%     h_nkff_log=figure();
-%     ed_kff_log=(m_He/(hbar*tof))*exp(ed_lgr1D);
-%     loglog(1e-6*(ed_kff_log(1:end-1)+ed_kff_log(2:end))/2,...
-%         1e18*n_kff_lg,'*-');
-%     xlim([1e-1,2e1]);   %   limit x-axis to like Clement paper
-%     grid on;
-%     title('1D condensate momentum profile');
-%     xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
-%     
-%     fname_str='nkff_log';
-%     saveas(h_nkff_log,[configs.files.dirout,fname_str,'.png']);
-%     saveas(h_nkff_log,[configs.files.dirout,fname_str,'.fig']);
-% end
-
-%%% LOG DIST (improved for modularity)
-ed_lgk=configs.hist.ed_lgk;     % get log-spaced edges
-N_lgk1D=histcounts(k_1D,ed_lgk);   % use original data but bins are log-spaced
-N_lgk1D=N_lgk1D/(nShot*detQE);	% normalise for single shot and detector QE
+%%% LOG DIST
+ed_lgk=configs.hist.ed_lgk;         % get log-spaced edges
+N_lgk1D=histcounts(k_1D,ed_lgk);    % use original data but bins are log-spaced
+N_lgk1D=N_lgk1D/(nShot*detQE);      % normalise for single shot and detector QE
 d_ed_lgk=diff(ed_lgk);
 cent_ed_lgk=sqrt(ed_lgk(1:end-1).*ed_lgk(2:end));   % GEOMETRIC bin centres
 kperp_area=pi*(r2k(configs.slice.cyl_rad)^2);       % transverse intg area in k-space
@@ -237,14 +202,10 @@ end
 
 
 %% n(k)k4 scaled plot
-% TODO: tidy up - kcent like information could be evaluated more upstream
-% kcent=(ed_kff_log(1:end-1)+ed_kff_log(2:end))/2;
-% n_scaled=n_kff_lg.*(kcent.^4);
-n_scaled=n_lgk1D.*(cent_ed_lgk.^4);
+n_scaled=n_lgk1D.*(cent_ed_lgk.^4);     % for nk4 plot
 
 if verbose>0    % plot
     h_scaled_nk=figure();
-%     semilogy(1e-6*kcent,n_scaled,'*');
     semilogy(1e-6*cent_ed_lgk,n_scaled,'*');
     
     grid on;
