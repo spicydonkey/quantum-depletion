@@ -33,7 +33,7 @@ configs.const.tof=0.430;    % TOF for free-fall from trap to DLD
 %%% 1D slice
 % counts captured along a 1D line-slice from well "below" condensate to centre
 configs.slice.cyl_orient=1;     % slice through Z-axis (1:Z,2:X,3:Y)
-configs.slice.cyl_rad=5e-3;     % cyl radius [m]
+configs.slice.cyl_rad=1e-3;     % cyl radius [m]
 configs.slice.cyl_hgt=70e-3;    % cyl height [m]
 
 % build cylinder dim
@@ -43,8 +43,25 @@ configs.slice.cyl_dim=[configs.slice.cyl_rad,configs.slice.cyl_hgt];
 configs.slice.cyl_cent=zeros(1,3);
 configs.slice.cyl_cent(configs.slice.cyl_orient)=-0.5*configs.slice.cyl_hgt;
 
-%%% HISTOGRAMMING
-configs.nbin=100;
+%%% Histogramming
+configs.hist.nbin=500;   % used for real space and linear-k distribution
+% TODO - (log-spaced) bin edges to use in k-space --> simplifies anisotropic
+% analysis
+configs.hist.ed_lgk=logspace(5,7,10);   % 10^X [m^-1]
+
+%%% Fit to large-k tail
+% fitting region
+configs.fit.k_min=3e6;      % lower bound k to use for fit [m^-1]
+% fitting function
+configs.fit.fun_negpowk='y~A*(x1^(-alpha))';    % negative-power function
+% initial conditions
+configs.fit.param0=[1,4];   % (A, alpha)
+% fit options
+configs.fit.opt=statset('TolFun',1e-15,...
+    'TolX',1e-15,...
+    'MaxIter',1e6,...
+    'UseParallel',1,...
+    'Display','off');
 
 
 %% ALGORITHM CONFIGS
