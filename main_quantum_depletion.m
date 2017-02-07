@@ -38,6 +38,7 @@ hbar=configs.const.hbar;
 m_He=configs.const.m_He;
 tof=configs.const.tof;
 vz=9.8*tof;     % atom free-fall vert v at detector hit for T-to-Z conversion;
+detQE=configs.const.detect_qe;
 
 % Load project specific params
 hist_nbin=configs.nbin;         % number of bins to use for histogramming
@@ -56,9 +57,9 @@ for i=1:nShot
 end
 
 % Plot far-field ZXY
-if verbose>1    
+if verbose>2    
     h_zxy_ff=figure();
-    plot_zxy(zxy_0,100,'r');
+    plot_zxy(zxy_0,20,'k');
     title('Condensate point cloud');
     xlabel('X [m]'); ylabel('Y [m]'); zlabel('Z [m]');
     view(3);
@@ -120,6 +121,7 @@ r_1D=r_1D(:,configs.slice.cyl_orient);      % 1D squeezed data in real-space
 
 %%% LINEAR DIST
 [N_r1D,ed_r1D]=histcounts(r_1D,hist_nbin);  % lin hist
+N_r1D=N_r1D/(nShot*detQE);  % normalise for a single shot and consider detector QE
 
 % number to density
 area_perp_1D=pi*(configs.slice.cyl_rad^2);  % area of integrated dims
@@ -131,6 +133,7 @@ n_kff=(hbar*tof/m_He)^3*n_r1D;  % number density (real space) to far-field momen
 %%% LOG DIST
 log_r_1D=real(log(r_1D));   % convert to log space
 [N_lgr1D,ed_lgr1D]=histcounts(log_r_1D,hist_nbin);
+N_lgr1D=N_lgr1D/(nShot*detQE);      % normalise for single shot and detector QE
 dr1D=exp(ed_lgr1D(2:end))-exp(ed_lgr1D(1:end-1));   % hist bin width in 1D
 n_lgr1D=N_lgr1D./(dr1D*area_perp_1D);       % number density [m^-3]
 
@@ -166,9 +169,11 @@ saveas(h_nkff,[configs.files.dirout,fname_str,'.fig']);
 h_nkff_log=figure();
 ed_kff_log=(m_He/(hbar*tof))*exp(ed_lgr1D);
 loglog(1e-6*(ed_kff_log(1:end-1)+ed_kff_log(2:end))/2,...
-    1e18*n_kff_lg,'--');
+    1e18*n_kff_lg,'*-');
+xlim([0.1,10]);   %   limit x-axis to like Clement paper
+grid on;
 title('1D condensate momentum profile');
-xlabel('$k$ [m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
+xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
 
 fname_str='nkff_log';
 saveas(h_nkff_log,[configs.files.dirout,fname_str,'.png']);
