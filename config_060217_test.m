@@ -2,12 +2,12 @@
 % mf=0 atoms
 
 %%% GENERAL
-verbose=1;
+verbose=2;
 
 %%% Raw data handling
 % files -  data file
-configs.files.path='C:\Users\HE BEC\Documents\lab\quantum-depletion\exp1\d';    % path to unindexed data file (e.g. 'a\b\datadir\$DATA_FNAME_TOKEN$')
-configs.files.id=1:500;          % file id numbers to use for analysis
+configs.files.path='\\AMPLPC29\Users\TDC_user\ProgramFiles\my_read_tdc_gui_v1.0.1\dld_output\QuantumDepletion\Run3\d';    % path to unindexed data file (e.g. 'a\b\datadir\$DATA_FNAME_TOKEN$')
+configs.files.id=1:3500;          % file id numbers to use for analysis
 configs.files.minCount=100;     % min counts to use for analysis
 
 
@@ -16,12 +16,14 @@ configs.rot_angle=0.61;     % angle in rad (exp default should be 0.61)
 
 % TXY window - region of interest ( [] --> no crop )
 %   XY window is applied after rotation
-configs.window{1}=[0.56 0.575];      % T [s]
+%   window liberally for very long k-tail
+configs.window{1}=[0.54 0.585];      % T [s]
 configs.window{2}=[-35e-3,30e-3];    % X [m]
 configs.window{3}=[-40e-3,28e-3];    % Y [m]
 
 
 %%% Experimental consts 
+configs.const.detect_qe=0.1;      % detector quantum efficiency
 configs.const.hbar=1.05457e-34;     % hbar [m^2kg/s]
 configs.const.m_He=6.646476e-27;    % mass of helium (kg)
 configs.const.tof=0.430;    % TOF for free-fall from trap to DLD
@@ -31,8 +33,8 @@ configs.const.tof=0.430;    % TOF for free-fall from trap to DLD
 %%% 1D slice
 % counts captured along a 1D line-slice from well "below" condensate to centre
 configs.slice.cyl_orient=1;     % slice through Z-axis (1:Z,2:X,3:Y)
-configs.slice.cyl_rad=10e-4;     % cyl radius [m]
-configs.slice.cyl_hgt=50e-3;    % cyl height [m]
+configs.slice.cyl_rad=5e-3;     % cyl radius [m]
+configs.slice.cyl_hgt=70e-3;    % cyl height [m]
 
 % build cylinder dim
 configs.slice.cyl_dim=[configs.slice.cyl_rad,configs.slice.cyl_hgt];
