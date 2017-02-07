@@ -41,7 +41,7 @@ vz=9.8*tof;     % atom free-fall vert v at detector hit for T-to-Z conversion;
 detQE=configs.const.detect_qe;
 
 % Load project specific params
-hist_nbin=configs.nbin;         % number of bins to use for histogramming
+hist_nbin=configs.hist.nbin;         % number of bins to use for histogramming
 
 %%% Pre-processing raw data
 txy_0=cell(nShot,1);    % oscillation compensated txy counts
@@ -116,8 +116,12 @@ saveas(h_zxy_summ,[configs.files.dirout,fname_str,'.fig']);
 
 
 %% Density profiling
+% collate and collapse all captured count to 1D
 r_1D=abs(vertcat(zxy_slice{:}));
 r_1D=r_1D(:,configs.slice.cyl_orient);      % 1D squeezed data in real-space
+
+% r to k
+k_1D=r2k(r_1D);     % array of 1D k in [m^-1]
 
 %%% LINEAR DIST
 [N_r1D,ed_r1D]=histcounts(r_1D,hist_nbin);  % lin hist
@@ -130,7 +134,32 @@ n_r1D=N_r1D./(diff(ed_r1D)*area_perp_1D);   % number density [m^-3]
 n_kff=(hbar*tof/m_He)^3*n_r1D;  % number density (real space) to far-field momentum density
 
 
-%%% LOG DIST
+if verbose>0	% plot
+    % real space density dist
+    h_nr1D=figure();
+    plot(1e3*(ed_r1D(1:end-1)+ed_r1D(2:end))/2,...
+        1e-9*n_r1D,'--');
+    title('1D condensate number profile');
+    xlabel('$r$ [mm]'); ylabel('$n(r,\overline{t})$ [mm$^{-3}$]');
+    
+    fname_str='nr1D';
+    saveas(h_nr1D,[configs.files.dirout,fname_str,'.png']);
+    saveas(h_nr1D,[configs.files.dirout,fname_str,'.fig']);
+    
+    % far-field momentum space (lin)
+    h_nkff=figure();
+    ed_kff=(m_He/(hbar*tof))*ed_r1D;
+    plot(1e-6*(ed_kff(1:end-1)+ed_kff(2:end))/2,...
+        1e18*n_kff,'-');
+    title('1D condensate momentum profile');
+    xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
+    
+    fname_str='nkff';
+    saveas(h_nkff,[configs.files.dirout,fname_str,'.png']);
+    saveas(h_nkff,[configs.files.dirout,fname_str,'.fig']);
+end
+
+%%% LOG DIST (Method 1)
 log_r_1D=real(log(r_1D));   % convert to log space
 [N_lgr1D,ed_lgr1D]=histcounts(log_r_1D,hist_nbin);
 N_lgr1D=N_lgr1D/(nShot*detQE);      % normalise for single shot and detector QE
@@ -139,45 +168,31 @@ n_lgr1D=N_lgr1D./(dr1D*area_perp_1D);       % number density [m^-3]
 
 n_kff_lg=(hbar*tof/m_He)^3*n_lgr1D; % ff momentum density
 
+if verbose>0    % plot
+    % far-field momentum space (log)
+    h_nkff_log=figure();
+    ed_kff_log=(m_He/(hbar*tof))*exp(ed_lgr1D);
+    loglog(1e-6*(ed_kff_log(1:end-1)+ed_kff_log(2:end))/2,...
+        1e18*n_kff_lg,'*-');
+    xlim([0.1,10]);   %   limit x-axis to like Clement paper
+    grid on;
+    title('1D condensate momentum profile');
+    xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
+    
+    fname_str='nkff_log';
+    saveas(h_nkff_log,[configs.files.dirout,fname_str,'.png']);
+    saveas(h_nkff_log,[configs.files.dirout,fname_str,'.fig']);
+end
+
+%%% LOG DIST (Method 2)
+% TODO specify bin edges for log-space
+% ed_lgk=configs.hist.ed_lgk;     % get log-spaced edges
+% N_lgr1D_test=histcounts(k_1D,ed_lgk);
 
 
-%% Plot density profiles
-% real space density dist
-h_nr1D=figure();
-plot(1e3*(ed_r1D(1:end-1)+ed_r1D(2:end))/2,...
-    1e-9*n_r1D,'--');
-title('1D condensate number profile');
-xlabel('$r$ [mm]'); ylabel('$n(r,\overline{t})$ [mm$^{-3}$]');
+%% Fit to density profile
 
-fname_str='nr1D';
-saveas(h_nr1D,[configs.files.dirout,fname_str,'.png']);
-saveas(h_nr1D,[configs.files.dirout,fname_str,'.fig']);
 
-% far-field momentum space (lin)
-h_nkff=figure();
-ed_kff=(m_He/(hbar*tof))*ed_r1D;
-plot(1e-6*(ed_kff(1:end-1)+ed_kff(2:end))/2,...
-    1e18*n_kff,'-');
-title('1D condensate momentum profile');
-xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
-
-fname_str='nkff';
-saveas(h_nkff,[configs.files.dirout,fname_str,'.png']);
-saveas(h_nkff,[configs.files.dirout,fname_str,'.fig']);
-
-% far-field momentum space (log)
-h_nkff_log=figure();
-ed_kff_log=(m_He/(hbar*tof))*exp(ed_lgr1D);
-loglog(1e-6*(ed_kff_log(1:end-1)+ed_kff_log(2:end))/2,...
-    1e18*n_kff_lg,'*-');
-xlim([0.1,10]);   %   limit x-axis to like Clement paper
-grid on;
-title('1D condensate momentum profile');
-xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
-
-fname_str='nkff_log';
-saveas(h_nkff_log,[configs.files.dirout,fname_str,'.png']);
-saveas(h_nkff_log,[configs.files.dirout,fname_str,'.fig']);
 
 %% far-field momentum distribution
 % k_ff=abs(vertcat(zxy_0{:}));     % collate all shots and convert to abs(k)-space (TODO)
