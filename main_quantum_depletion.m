@@ -185,6 +185,7 @@ if verbose>0	% plot
 end
 
 %%% LOG DIST (Method 1)
+% NOTE: bin-edges are assigned automatically using lims of data
 log_r_1D=real(log(r_1D));   % convert to log space
 [N_lgr1D,ed_lgr1D]=histcounts(log_r_1D,hist_nbin);
 N_lgr1D=N_lgr1D/(nShot*detQE);      % normalise for single shot and detector QE
@@ -199,7 +200,7 @@ if verbose>0    % plot
     ed_kff_log=(m_He/(hbar*tof))*exp(ed_lgr1D);
     loglog(1e-6*(ed_kff_log(1:end-1)+ed_kff_log(2:end))/2,...
         1e18*n_kff_lg,'*-');
-    xlim([0.1,10]);   %   limit x-axis to like Clement paper
+    xlim([1e-1,2e1]);   %   limit x-axis to like Clement paper
     grid on;
     title('1D condensate momentum profile');
     xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
@@ -211,17 +212,40 @@ end
 
 %%% LOG DIST (Method 2)
 % TODO specify bin edges for log-space
-% ed_lgk=configs.hist.ed_lgk;     % get log-spaced edges
-% N_lgr1D_test=histcounts(k_1D,ed_lgk);
+ed_lgk=configs.hist.ed_lgk;     % get log-spaced edges
+N_lgk1D_test=histcounts(k_1D,ed_lgk);   % use original data but bins are log-spaced
+N_lgk1D_test=N_lgk1D_test/(nShot*detQE);	% normalise for single shot and detector QE
+d_ed_lgk=diff(ed_lgk);
+cent_ed_lgk=sqrt(ed_lgk(1:end-1).*ed_lgk(2:end));   % GEOMETRIC bin centres
+kperp_area=pi*(r2k(configs.slice.cyl_rad)^2);       % transverse intg area in k-space
+n_lgk1D_test=N_lgk1D_test./(d_ed_lgk*kperp_area);       % number density [m^-3]
 
-%%% n(k)k4 scaled plot
+if verbose>0    % plot
+    % far-field momentum space (log)
+    h_nkff_log_test=figure();
+    loglog(1e-6*cent_ed_lgk,...
+        1e18*n_lgk1D_test,'*-');
+    
+    xlim([1e-1,2e1]);   %   limit x-axis to like Clement paper
+    grid on;
+    title('1D condensate momentum profile');
+    xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
+    
+    fname_str='nkff_log_test';
+    saveas(h_nkff_log,[configs.files.dirout,fname_str,'.png']);
+    saveas(h_nkff_log,[configs.files.dirout,fname_str,'.fig']);
+end
+
+
+%% n(k)k4 scaled plot
+% TODO: tidy up - kcent like information could be evaluated more upstream
 kcent=(ed_kff_log(1:end-1)+ed_kff_log(2:end))/2;
 n_scaled=n_kff_lg.*(kcent.^4);
 
 if verbose>0    % plot
     h_scaled_nk=figure();
     semilogy(1e-6*kcent,n_scaled,'*');
-    ylim([1e8,1e11]);
+    ylim([1e8,1e11]);       % x limits to like Clement PRL
     xlabel('$k$ [$\mu$m$^{-1}$]');
     ylabel('$k^{4}n_{\infty}(k)$ [m$^{-1}$]');
     
@@ -230,130 +254,9 @@ if verbose>0    % plot
     saveas(h_scaled_nk,[configs.files.dirout,fname_str,'.fig']);
 end
 
+
 %% Fit to density profile
-
-
-
-%% far-field momentum distribution
-% k_ff=abs(vertcat(zxy_0{:}));     % collate all shots and convert to abs(k)-space (TODO)
-% 
-% % Radial (ZY plane)
-% k_rad=k_ff(:,[1,3]);
-% log_k_rad=real(log(k_rad));   % get log dist
-% 
-% [N_hist_krad,ed_hist_krad]=histcounts(k_rad,hist_nbin);       % lin hist
-% [N_hist_lgkrad,ed_hist_lgkrad]=histcounts(log_k_rad,hist_nbin);   % log hist
-% 
-% % Longitudinal (X-axis)
-% k_lon=k_ff(:,2);
-% log_k_lon=real(log(k_lon));   % get log dist
-% 
-% [N_hist_klon,ed_hist_klon]=histcounts(k_lon,hist_nbin);   % lin hist
-% [N_hist_lgklon,ed_hist_lgklon]=histcounts(log_k_lon,hist_nbin);  % log hist
-% 
-% %%% number to density conversion
-% % TODO: scale to 1D
-% % linear bin
-% n_hist_krad=N_hist_krad./diff(ed_hist_krad);    %currently [m-1]
-% n_hist_klon=N_hist_klon./diff(ed_hist_klon);
-% 
-% % logarithmic bin
-% n_hist_lgkrad=N_hist_lgkrad./(exp(ed_hist_lgkrad(2:end))-exp(ed_hist_lgkrad(1:end-1)));
-% n_hist_lgklon=N_hist_lgklon./(exp(ed_hist_lgklon(2:end))-exp(ed_hist_lgklon(1:end-1)));
-% 
-% % Plot
-% %%% Linear r histogram
-% h_hist_r=figure();
-% hold on;
-% plot((ed_hist_krad(1:end-1)+ed_hist_krad(2:end))/2,...
-%     N_hist_krad,'--');
-% plot((ed_hist_klon(1:end-1)+ed_hist_klon(2:end))/2,...
-%     N_hist_klon,'-');
-% 
-% legend({'Radial','Longitudinal'});
-% title('1D condensate number profile (linear)');
-% xlabel('$r$ [m]'); ylabel('$N(r)$');
-% 
-% % save plot
-% fname_str='hist_k';
-% saveas(h_hist_r,[configs.files.dirout,fname_str,'.png']);
-% saveas(h_hist_r,[configs.files.dirout,fname_str,'.fig']);
-% 
-% %%% linear r density
-% h_nr=figure();
-% hold on;
-% plot((ed_hist_krad(1:end-1)+ed_hist_krad(2:end))/2,...
-%     n_hist_krad,'--');
-% plot((ed_hist_klon(1:end-1)+ed_hist_klon(2:end))/2,...
-%     n_hist_klon,'-');
-% 
-% legend({'Radial','Longitudinal'});
-% title('1D condensate density profile (linear)');
-% xlabel('$r$ [m$^{-1}$]'); ylabel('$n(r)$');
-% 
-% % save plot
-% fname_str='nr';
-% saveas(h_nr,[configs.files.dirout,fname_str,'.png']);
-% saveas(h_nr,[configs.files.dirout,fname_str,'.fig']);
-% 
-% 
-% %%% loglog r histogram
-% % Radial
-% h_hist_lgkrad=figure();
-% loglog((ed_hist_lgkrad(1:end-1)+ed_hist_lgkrad(2:end))/2,...
-%     N_hist_lgkrad,'--');
-% 
-% title('1D radial condensate number profile (log-log)');
-% xlabel('$r$ [m]'); ylabel('$N(r)$');
-% axis tight;
-% 
-% % save plot
-% fname_str='hist_lgkrad';
-% saveas(h_hist_lgkrad,[configs.files.dirout,fname_str,'.png']);
-% saveas(h_hist_lgkrad,[configs.files.dirout,fname_str,'.fig']);
-% 
-% % Longitudinal
-% h_hist_lgklon=figure();
-% loglog((ed_hist_lgklon(1:end-1)+ed_hist_lgklon(2:end))/2,...
-%     N_hist_lgklon,'-');
-% 
-% title('1D longitudinal condensate number profile (log-log)');
-% xlabel('$r$ [m]'); ylabel('$N(r)$');
-% axis tight;
-% 
-% % save plot
-% fname_str='hist_lgklon';
-% saveas(h_hist_lgklon,[configs.files.dirout,fname_str,'.png']);
-% saveas(h_hist_lgklon,[configs.files.dirout,fname_str,'.fig']);
-% 
-% %%% log r density
-% % Radial
-% h_n_lgkrad=figure();
-% loglog((ed_hist_lgkrad(1:end-1)+ed_hist_lgkrad(2:end))/2,...
-%     n_hist_lgkrad,'--');
-% 
-% title('1D radial condensate density profile');
-% xlabel('$r$ [m]'); ylabel('$n(r)$ [m$^{-1}$]');
-% axis tight;
-% 
-% % save plot
-% fname_str='n_lgkrad';
-% saveas(h_n_lgkrad,[configs.files.dirout,fname_str,'.png']);
-% saveas(h_n_lgkrad,[configs.files.dirout,fname_str,'.fig']);
-% 
-% % Longitudinal
-% h_n_lgklon=figure();
-% loglog((ed_hist_lgklon(1:end-1)+ed_hist_lgklon(2:end))/2,...
-%     n_hist_lgklon,'-');
-% 
-% title('1D longitudinal condensate density profile');
-% xlabel('$r$ [m]'); ylabel('$n(r)$ [m$^{-1}$]');
-% axis tight;
-% 
-% % save plot
-% fname_str='n_lgklon';
-% saveas(h_n_lgklon,[configs.files.dirout,fname_str,'.png']);
-% saveas(h_n_lgklon,[configs.files.dirout,fname_str,'.fig']);
+% TODO
 
 
 %% Save data
