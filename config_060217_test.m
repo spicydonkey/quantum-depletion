@@ -7,7 +7,7 @@ verbose=2;
 %%% Raw data handling
 % files -  data file
 configs.files.path='\\AMPLPC29\Users\TDC_user\ProgramFiles\my_read_tdc_gui_v1.0.1\dld_output\QuantumDepletion\Run3\d';    % path to unindexed data file (e.g. 'a\b\datadir\$DATA_FNAME_TOKEN$')
-configs.files.id=1:3500;          % file id numbers to use for analysis
+configs.files.id=1:500;          % file id numbers to use for analysis
 configs.files.minCount=100;     % min counts to use for analysis
 
 
@@ -33,8 +33,9 @@ configs.const.tof=0.430;    % TOF for free-fall from trap to DLD
 %%% 1D slice
 % counts captured along a 1D line-slice from well "below" condensate to centre
 configs.slice.cyl_orient=1;     % slice through Z-axis (1:Z,2:X,3:Y)
-configs.slice.cyl_rad=1e-3;     % cyl radius [m]
+configs.slice.cyl_rad=3e-3;     % cyl radius [m]
 configs.slice.cyl_hgt=70e-3;    % cyl height [m]
+configs.slice.mincount=500;     % minimum count in 1D slice to pass
 
 % build cylinder dim
 configs.slice.cyl_dim=[configs.slice.cyl_rad,configs.slice.cyl_hgt];
