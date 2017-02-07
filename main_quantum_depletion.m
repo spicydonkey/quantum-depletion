@@ -29,10 +29,6 @@ vars_save={'path_config',...
 % load config
 run(path_config);
 
-% Load TXY data and crop to region of interest
-[txy_raw,files_out]=loadExpData(configs,verbose);
-nShot=size(txy_raw,1);
-
 % Load misc params
 hbar=configs.const.hbar;
 m_He=configs.const.m_He;
@@ -40,22 +36,58 @@ tof=configs.const.tof;
 vz=9.8*tof;     % atom free-fall vert v at detector hit for T-to-Z conversion;
 detQE=configs.const.detect_qe;
 
-% Load project specific params
-hist_nbin=configs.hist.nbin;         % number of bins to use for histogramming
+% Load TXY data and crop to region of interest
+[txy_raw,files_out]=loadExpData(configs,verbose);
+nShot_raw=size(txy_raw,1);
 
-%%% Pre-processing raw data
-txy_0=cell(nShot,1);    % oscillation compensated txy counts
-zxy_0=cell(nShot,1);    % T-Z conversion
-for i=1:nShot
+
+%% Pre-processing
+% filter shots with spurious counts in 1D window of interest
+txy_0=cell(nShot_raw,1);        % oscillation compensated txy counts
+zxy_0=cell(nShot_raw,1);        % T-Z conversion
+zxy_slice=cell(nShot_raw,1);    % 1D slice captured counts
+
+Nmin_1D=configs.slice.mincount;     % minimum count in 1D slice to pass
+N_1D_all=zeros(nShot_raw,1);        % number captured in 1D slice
+
+fid_analysis=zeros(nShot_raw,1);       % fild id's used for following analysis (post-filter)
+counter=1;
+for i=1:nShot_raw
     cond_cent_tmp=mean(txy_raw{i},1);   % approx condensate centre from average of captured
     n_count_tmp=size(txy_raw{i},1);     % number of counts in this shot
-    txy_0{i}=txy_raw{i}-repmat(cond_cent_tmp,[n_count_tmp,1]);  % centre around self-average
+    txy_0_temp=txy_raw{i}-repmat(cond_cent_tmp,[n_count_tmp,1]);  % centre around self-average
     
     % T-Z conversion
-    zxy_0{i}=txy_0{i};
-    zxy_0{i}(:,1)=zxy_0{i}(:,1)*vz;    % TOF - dz at time of detection
-end
+    zxy_0_temp=txy_0_temp;
+    zxy_0_temp(:,1)=zxy_0_temp(:,1)*vz;    % TOF - dz at time of detection
 
+    % Take 1D slice
+    [zxy_slice_temp,~,n_captured]=cylindercull(zxy_0_temp,configs.slice.cyl_cent,...
+        configs.slice.cyl_dim,configs.slice.cyl_orient);
+    N_1D_all(i)=n_captured;         % save captured number
+    
+    % filter shots based on counts in 1D slice
+    if n_captured>Nmin_1D
+        txy_0{counter}=txy_0_temp;
+        zxy_0{counter}=zxy_0_temp;
+        zxy_slice{counter}=zxy_slice_temp;
+        fid_analysis(counter)=files_out.id_ok(i);
+        
+        counter=counter+1;
+    else
+        if verbose>0
+            warning('1D filter: Low-count in file #%d. Discarding from further processing.',files_out.id_ok(i));
+        end
+    end
+end
+nShot=counter-1;    % number of shots passed from filtering for N in 1D slice
+% clean up arrays
+txy_0=txy_0(1:nShot);
+zxy_0=zxy_0(1:nShot);
+zxy_slice=zxy_slice(1:nShot);
+fid_analysis=fid_analysis(1:nShot);
+
+%%% PLOT
 % Plot far-field ZXY
 if verbose>2    
     h_zxy_ff=figure();
@@ -69,14 +101,6 @@ if verbose>2
     fname_str='zxy_ff';
     saveas(h_zxy_ff,[configs.files.dirout,fname_str,'.png']);
     saveas(h_zxy_ff,[configs.files.dirout,fname_str,'.fig']);
-end
-
-
-%% Take 1D slice
-zxy_slice=cell(nShot,1);
-for i=1:nShot
-    zxy_slice{i}=cylindercull(zxy_0{i},configs.slice.cyl_cent,...
-        configs.slice.cyl_dim,configs.slice.cyl_orient);
 end
 
 % Plot 1D slice point cloud
@@ -124,7 +148,8 @@ r_1D=r_1D(:,configs.slice.cyl_orient);      % 1D squeezed data in real-space
 k_1D=r2k(r_1D);     % array of 1D k in [m^-1]
 
 %%% LINEAR DIST
-[N_r1D,ed_r1D]=histcounts(r_1D,hist_nbin);  % lin hist
+hist_nbin=configs.hist.nbin;
+[N_r1D,ed_r1D]=histcounts(r_1D,hist_nbin);  % lin hist - autoscale bins to lim
 N_r1D=N_r1D/(nShot*detQE);  % normalise for a single shot and consider detector QE
 
 % number to density
@@ -189,6 +214,21 @@ end
 % ed_lgk=configs.hist.ed_lgk;     % get log-spaced edges
 % N_lgr1D_test=histcounts(k_1D,ed_lgk);
 
+%%% n(k)k4 scaled plot
+kcent=(ed_kff_log(1:end-1)+ed_kff_log(2:end))/2;
+n_scaled=n_kff_lg.*(kcent.^4);
+
+if verbose>0    % plot
+    h_scaled_nk=figure();
+    semilogy(1e-6*kcent,n_scaled,'*');
+    ylim([1e8,1e11]);
+    xlabel('$k$ [$\mu$m$^{-1}$]');
+    ylabel('$k^{4}n_{\infty}(k)$ [m$^{-1}$]');
+    
+    fname_str='k4_scaled_dist';
+    saveas(h_scaled_nk,[configs.files.dirout,fname_str,'.png']);
+    saveas(h_scaled_nk,[configs.files.dirout,fname_str,'.fig']);
+end
 
 %% Fit to density profile
 
