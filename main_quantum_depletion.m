@@ -9,10 +9,10 @@ path_config='C:\Users\HE BEC\Documents\MATLAB\quantum-depletion\config_060217_te
 % vars to save to output
 vars_save={'path_config',...
     'zxy_0','files_out',...
-    'zxy_slice','r_1D',...
-    'N_r1D','ed_r1D',...
-    'area_perp_1D',...
-    'n_r1D','n_kff',...
+    'zxy_slice',...
+    'r_1D','k_1D',...
+    'r_perp_area','k_perp_area'...
+    'hist_r1D','nden_r1D','nden_k1D',...
     };
 
 
@@ -109,7 +109,7 @@ if verbose>1
     saveas(h_zxy_slice,[configs.files.dirout,fname_str,'.fig']);
 end
 
-%% Plot summary
+%% Proprocessing summary
 h_zxy_summ=figure();
 nShotSumm=50;   % number of shots to plot as summary
 if nShot<nShotSumm
@@ -130,49 +130,83 @@ saveas(h_zxy_summ,[configs.files.dirout,fname_str,'.png']);
 saveas(h_zxy_summ,[configs.files.dirout,fname_str,'.fig']);
 
 
-%% Density profiling
+%% 1D cull and processing
 % collate and collapse all captured count to 1D
 r_1D=abs(vertcat(zxy_slice{:}));
-r_1D=r_1D(:,configs.slice.cyl_orient);      % 1D squeezed data in real-space
+r_1D=r_1D(:,configs.slice.cyl_orient);	% 1D culled data in real-space
 
 % r to k
 k_1D=r2k(r_1D);     % array of 1D k in [m^-1]
 
-%%% LINEAR DIST
-hist_nbin=configs.hist.nbin;
-[N_r1D,ed_r1D]=histcounts(r_1D,hist_nbin);  % lin hist - autoscale bins to lim
-N_r1D=N_r1D/(nShot*detQE);  % normalise for a single shot and consider detector QE
 
-% number to density
-area_perp_1D=pi*(configs.slice.cyl_rad^2);  % area of integrated dims
-n_r1D=N_r1D./(diff(ed_r1D)*area_perp_1D);   % number density [m^-3]
+%% Density profiling
+r_perp_area=pi*(configs.slice.cyl_rad^2);       % real area of integrated dims
+k_perp_area=pi*(r2k(configs.slice.cyl_rad)^2);  % k area int area
 
-n_kff=(hbar*tof/m_He)^3*n_r1D;  % number density (real space) to far-field momentum density
+%%% LINEAR DIST (improved data structure)
+% hist_nbin=configs.hist.nbin;
+% [N_r1D,ed_r1D]=histcounts(r_1D,hist_nbin);  % lin hist - autoscale bins to lim
+% N_r1D=N_r1D/(nShot*detQE);  % normalise for a single shot and consider detector QE
 
+hist_r1D.binN=configs.hist.nbin;
+[hist_r1D.N,hist_r1D.binEdge]=histcounts(r_1D,hist_r1D.binN);  % lin hist - autoscale bins to lim
+hist_r1D.binCent=0.5*(hist_r1D.binEdge(1:end-1)+hist_r1D.binEdge(2:end));   % arith avg to bin center
 
-if verbose>0	% plot
-    % real space density dist
+% evaluate number density
+nden_r1D=hist_r1D.N./(nShot*detQE*r_perp_area*diff(hist_r1D.binEdge));  % normalised for: shot, QE, phase space volume
+nden_k1D=(hbar*tof/m_He)^3*nden_r1D;    % number density (real space) to far-field momentum density
+
+% % number to density
+% n_r1D=N_r1D./(diff(ed_r1D)*r_perp_area);   % number density [m^-3]
+% n_kff=(hbar*tof/m_He)^3*n_r1D;  % number density (real space) to far-field momentum density
+
+% if verbose>0	% plot
+%     % real space density dist
+%     h_nr1D=figure();
+%     plot(1e3*(ed_r1D(1:end-1)+ed_r1D(2:end))/2,...
+%         1e-9*n_r1D,'--');
+%     title('1D condensate number profile');
+%     xlabel('$r$ [mm]'); ylabel('$n(r,\overline{t})$ [mm$^{-3}$]');
+%     
+%     fname_str='nr1D';
+%     saveas(h_nr1D,[configs.files.dirout,fname_str,'.png']);
+%     saveas(h_nr1D,[configs.files.dirout,fname_str,'.fig']);
+%     
+%     % far-field momentum space (lin)
+%     h_nkff=figure();
+%     ed_kff=(m_He/(hbar*tof))*ed_r1D;
+%     plot(1e-6*(ed_kff(1:end-1)+ed_kff(2:end))/2,...
+%         1e18*n_kff,'-');
+%     title('1D condensate momentum profile');
+%     xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
+%     
+%     fname_str='nkff';
+%     saveas(h_nkff,[configs.files.dirout,fname_str,'.png']);
+%     saveas(h_nkff,[configs.files.dirout,fname_str,'.fig']);
+% end
+
+if verbose>0    % plot
+    % real-space density dist
     h_nr1D=figure();
-    plot(1e3*(ed_r1D(1:end-1)+ed_r1D(2:end))/2,...
-        1e-9*n_r1D,'--');
+    plot(1e3*hist_r1D.binCent,...
+        1e-9*nden_r1D,'*-');    % scale units
     title('1D condensate number profile');
     xlabel('$r$ [mm]'); ylabel('$n(r,\overline{t})$ [mm$^{-3}$]');
     
-    fname_str='nr1D';
+    fname_str='nr1D_test';
     saveas(h_nr1D,[configs.files.dirout,fname_str,'.png']);
     saveas(h_nr1D,[configs.files.dirout,fname_str,'.fig']);
     
-    % far-field momentum space (lin)
-    h_nkff=figure();
-    ed_kff=(m_He/(hbar*tof))*ed_r1D;
-    plot(1e-6*(ed_kff(1:end-1)+ed_kff(2:end))/2,...
-        1e18*n_kff,'-');
+    % far-field momentum space
+    h_nk1D=figure();
+    plot(1e-6*r2k(hist_r1D.binCent),...
+        1e18*nden_k1D,'*-');    % scale units
     title('1D condensate momentum profile');
     xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
     
-    fname_str='nkff';
-    saveas(h_nkff,[configs.files.dirout,fname_str,'.png']);
-    saveas(h_nkff,[configs.files.dirout,fname_str,'.fig']);
+    fname_str='nk1D';
+    saveas(h_nk1D,[configs.files.dirout,fname_str,'.png']);
+    saveas(h_nk1D,[configs.files.dirout,fname_str,'.fig']);
 end
 
 %%% LOG DIST
@@ -181,8 +215,8 @@ N_lgk1D=histcounts(k_1D,ed_lgk);    % use original data but bins are log-spaced
 N_lgk1D=N_lgk1D/(nShot*detQE);      % normalise for single shot and detector QE
 d_ed_lgk=diff(ed_lgk);
 cent_ed_lgk=sqrt(ed_lgk(1:end-1).*ed_lgk(2:end));   % GEOMETRIC bin centres
-kperp_area=pi*(r2k(configs.slice.cyl_rad)^2);       % transverse intg area in k-space
-n_lgk1D=N_lgk1D./(d_ed_lgk*kperp_area);       % number density [m^-3]
+
+n_lgk1D=N_lgk1D./(d_ed_lgk*k_perp_area);       % number density [m^-3]
 
 if verbose>0    % plot
     % far-field momentum space (log)
