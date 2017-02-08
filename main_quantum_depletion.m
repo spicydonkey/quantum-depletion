@@ -18,6 +18,8 @@ vars_save={'path_config',...
 
 
 %% Main
+t_main_start=tic;
+
 % load config
 run(path_config);
 
@@ -40,19 +42,30 @@ nShot_raw=size(txy_raw,1);
 
 
 %% Pre-processing
+% Build BEC locator box
+bec_boxlim=cell(1,3);
+for i=1:3
+    bec_boxlim{i}=configs.bec.txy_pos(i)+configs.bec.box_fwidth(i)*[-0.5,0.5];
+end
+
 %%% Prepare complete set of oscillation cancelled ZXY data
 % convert TXY to ZXY centred around condensate (oscillation compensation)
 txy_0=cell(nShot_raw,1);        % oscillation compensated txy counts
 zxy_0=cell(nShot_raw,1);        % T-Z conversion
 
-txy_cent=zeros(nShot_raw,3);    % approx condensate centre from average of captured
+% txy_cent=zeros(nShot_raw,3);    % centre of all captured TXY
+bec_cent=zeros(nShot_raw,3);    % approx condensate centre from average of captured
 num_txy_raw=zeros(1,nShot_raw); % number of counts in loaded shot
 
 % build complete oscil cancelled data in the region of interest
 for i=1:nShot_raw
-    txy_cent(i,:)=mean(txy_raw{i},1);       % approx condensate centre from average of captured
+%     txy_cent(i,:)=mean(txy_raw{i},1);       % approx condensate centre from average of captured
+    % get mean position of counts captured in user specified box for
+    % locating BEC
+    [~,~,~,bec_cent(i,:)]=boxcull(txy_raw{i},bec_boxlim);   
+    
     num_txy_raw(i)=size(txy_raw{i},1);      % number of counts in this shot
-    txy_0{i}=txy_raw{i}-repmat(txy_cent(i,:),[num_txy_raw(i),1]);   % centre around self-average
+    txy_0{i}=txy_raw{i}-repmat(bec_cent(i,:),[num_txy_raw(i),1]);   % centre around self-average
     
     % T-Z conversion
     zxy_0{i}=txy_0{i};
@@ -266,7 +279,7 @@ h_nk_log_aa=figure();
 % loglog(1e-6*hist_lgk1D.binCent,...
 %     1e18*nden_lgk_avg,'o');     % scale units appropriately
 mseb(1e-6*hist_lgk1D.binCent,1e18*nden_lgk_avg,...
-    1e18*nden_lgk_std);
+    1e18*nden_lgk_se);  % NOTE: error in shaded error bar when error is larger than mean
 
 set(gca,'xScale','log');    % loglog scale
 set(gca,'yScale','log');
@@ -292,7 +305,7 @@ nk4_se=nk4_std/sqrt(size(nk4_collated,1));  % standard error
 h_nk4_aa=figure();
 % semilogy(1e-6*hist_lgk1D.binCent,nk4_avg,'o');
 mseb(1e-6*hist_lgk1D.binCent,nk4_avg,...
-    nk4_std);
+    nk4_se);        % NOTE: error in shaded error bar when error is larger than mean
 
 set(gca,'yScale','log');    % y scale log
 
@@ -317,3 +330,6 @@ for i = 1:length(vars_save)
     end
     save(configs.files.saveddata,vars_save{i},'-append');     % to overcome version conflict
 end
+
+%% END
+elapsedTime=toc(t_main_start);
