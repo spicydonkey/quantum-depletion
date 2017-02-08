@@ -9,12 +9,11 @@ path_config='C:\Users\HE BEC\Documents\MATLAB\quantum-depletion\config_060217_te
 % vars to save to output
 vars_save={'path_config',...
     'zxy_0','files_out',...
-    'zxy_slice',...
     'r_1D','k_1D',...
     'r_perp_area','k_perp_area'...
     'hist_r1D','nden_r1D','nden_k1D',...
     'hist_lgk1D','nden_lgk1D',...
-    'nk4_scaled',...
+    'nk4',...
     };
 
 
@@ -91,8 +90,6 @@ hist_r1D.binN=configs.hist.nbin;    % get number of bins to set up auto
 hist_lgk1D.binEdge=configs.hist.ed_lgk;     % get log-spaced edges
 hist_lgk1D.binCent=sqrt(hist_lgk1D.binEdge(1:end-1).*hist_lgk1D.binEdge(2:end));   % GEOM avg bin centres
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 for i=1:num_rot_angle     % rotate whole zxy to sample 1D slice with angular shift
     x_thetha_tmp=configs.axial_rot_angle(i);    % rotation angle
     
@@ -138,7 +135,6 @@ for i=1:num_rot_angle     % rotate whole zxy to sample 1D slice with angular shi
 %         zxy_slice=zxy_slice(1:nShot);
 %         fid_analysis=fid_analysis(1:nShot);
 %         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
     end
     
     % Plot 1D slice point cloud
@@ -235,14 +231,14 @@ for i=1:num_rot_angle     % rotate whole zxy to sample 1D slice with angular shi
     end
     
     %% Evaluate n(k)k4 scaled plot
-    nk4_scaled{i}=nden_lgk1D{i}.*((hist_lgk1D.binCent).^4);
+    nk4{i}=nden_lgk1D{i}.*((hist_lgk1D.binCent).^4);
     
     if verbose>0    % plot
         if i==1
             h_nk4=figure();
         end
         figure(h_nk4);
-        semilogy(1e-6*hist_lgk1D.binCent,nk4_scaled{i},'*-');
+        semilogy(1e-6*hist_lgk1D.binCent,nk4{i},'*-');
         hold on;
         
         grid on;
@@ -250,170 +246,52 @@ for i=1:num_rot_angle     % rotate whole zxy to sample 1D slice with angular shi
         xlabel('$k$ [$\mu$m$^{-1}$]');
         ylabel('$k^{4}n_{\infty}(k)$ [m$^{-1}$]');
         
-        fname_str='nk4_profile';
+        fname_str='nk4';
         saveas(h_nk4,[configs.files.dirout,fname_str,'.png']);
         saveas(h_nk4,[configs.files.dirout,fname_str,'.fig']);
     end
 end
-% DEBUG POINT
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% zxy_slice=cell(nShot_raw,1);    % 1D slice captured counts
-% 
-% Nmin_1D=configs.slice.mincount;     % minimum count in 1D slice to pass
-% N_1D_all=zeros(nShot_raw,1);        % number captured in 1D slice
-% 
-% fid_analysis=zeros(nShot_raw,1);       % fild id's used for following analysis (post-filter)
-% counter=1;
-% for i=1:nShot_raw
-%     cond_cent_tmp=mean(txy_raw{i},1);   % approx condensate centre from average of captured
-%     n_count_tmp=size(txy_raw{i},1);     % number of counts in this shot
-%     txy_0_temp=txy_raw{i}-repmat(cond_cent_tmp,[n_count_tmp,1]);  % centre around self-average
-%     
-%     % T-Z conversion
-%     zxy_0_temp=txy_0_temp;
-%     zxy_0_temp(:,1)=zxy_0_temp(:,1)*vz;    % TOF - dz at time of detection
-% 
-%     % Take 1D slice
-%     [zxy_slice_temp,~,n_captured]=cylindercull(zxy_0_temp,configs.slice.cyl_cent,...
-%         configs.slice.cyl_dim,configs.slice.cyl_orient);
-%     N_1D_all(i)=n_captured;         % save captured number
-%     
-%     
-% end
-% nShot=counter-1;    % number of shots passed from filtering for N in 1D slice
-% % clean up arrays
-% txy_0=txy_0(1:nShot);
-% zxy_0=zxy_0(1:nShot);
-% zxy_slice=zxy_slice(1:nShot);
-% fid_analysis=fid_analysis(1:nShot);
-
-%%% PLOT
-% Plot 1D slice point cloud
-% if verbose>1
-%     h_zxy_slice=figure();
-%     plot_zxy(zxy_slice,100,'k');
-%     title('1D sampled condensate point cloud');
-%     xlabel('X [m]'); ylabel('Y [m]'); zlabel('Z [m]');
-%     view(3);
-%     axis equal;
-%     
-%     % save plot
-%     fname_str='zxy_slice';
-%     saveas(h_zxy_slice,[configs.files.dirout,fname_str,'.png']);
-%     saveas(h_zxy_slice,[configs.files.dirout,fname_str,'.fig']);
-% end
-
-% %% Proprocessing summary
-% h_zxy_summ=figure();
-% nShotSumm=50;   % number of shots to plot as summary
-% if nShot<nShotSumm
-%     nShotSumm=nShot;
-% end
-% plot_zxy(zxy_0(1:nShotSumm),10,'r');
-% hold on;
-% plot_zxy(zxy_slice(1:nShotSumm),300,'b');
-% 
-% title('Summary - Condensate point cloud');
-% xlabel('X [m]'); ylabel('Y [m]'); zlabel('Z [m]');
-% view(3);
-% axis equal;
-% 
-% % save plot
-% fname_str='zxy_summ';
-% saveas(h_zxy_summ,[configs.files.dirout,fname_str,'.png']);
-% saveas(h_zxy_summ,[configs.files.dirout,fname_str,'.fig']);
 
 
-% %% 1D cull and processing
-% % collate and collapse all captured count to 1D
-% r_1D=abs(vertcat(zxy_slice{:}));
-% r_1D=r_1D(:,configs.slice.cyl_orient);	% 1D culled data in real-space
-% 
-% % r to k
-% k_1D=r2k(r_1D);     % array of 1D k in [m^-1]
+%% Statistical summary
+% TODO - do for all other data
+%%% k distribution - log-log
+nden_lgk_collated=vertcat(nden_lgk1D{:});   % collated k-density profile for all angles
+nden_lgk_avg=mean(nden_lgk_collated,1);     % angular averaged farfield k profile
+nden_lgk_se=std(nden_lgk_collated,1)/sqrt(size(nden_lgk_collated,1));   % standard error
+
+% Plot
+h_nk_log_aa=figure();
+loglog(1e-6*hist_lgk1D.binCent,...
+    1e18*nden_lgk_avg,'o');     % scale units appropriately
+
+xlim([1e-1,2e1]);   %   limit x-axis to like Clement paper
+grid on;
+title('Angular averaged - 1D k profile');
+xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
+
+fname_str='nk1D_loglog_aa';
+saveas(h_nk_log_aa,[configs.files.dirout,fname_str,'.png']);
+saveas(h_nk_log_aa,[configs.files.dirout,fname_str,'.fig']);
 
 
-% %% Density profiling
-% % r_perp_area=pi*(configs.slice.cyl_rad^2);       % real area of integrated dims
-% % k_perp_area=pi*(r2k(configs.slice.cyl_rad)^2);  % k area int area
-% 
-% %%% LINEAR DIST
-% hist_r1D.binN=configs.hist.nbin;    % get number of bins to set up auto
-% [hist_r1D.N,hist_r1D.binEdge]=histcounts(r_1D,hist_r1D.binN);  % lin hist - autoscale bins to lim
-% hist_r1D.binCent=0.5*(hist_r1D.binEdge(1:end-1)+hist_r1D.binEdge(2:end));   % arith avg to bin center
-% 
-% % evaluate number density
-% nden_r1D=(hist_r1D.N)./(nShot*detQE*r_perp_area*diff(hist_r1D.binEdge));  % normalised for: shot, QE, phase space volume
-% nden_k1D=(hbar*tof/m_He)^3*nden_r1D;    % number density (real space) to far-field momentum density
-% 
-% if verbose>0    % plot
-%     % real-space density dist
-%     h_nr1D=figure();
-%     plot(1e3*hist_r1D.binCent,...
-%         1e-9*nden_r1D,'*-');    % scale units
-%     title('1D condensate number profile');
-%     xlabel('$r$ [mm]'); ylabel('$n(r,\overline{t})$ [mm$^{-3}$]');
-%     
-%     fname_str='nr1D_test';
-%     saveas(h_nr1D,[configs.files.dirout,fname_str,'.png']);
-%     saveas(h_nr1D,[configs.files.dirout,fname_str,'.fig']);
-%     
-%     % far-field momentum space
-%     h_nk1D=figure();
-%     plot(1e-6*r2k(hist_r1D.binCent),...
-%         1e18*nden_k1D,'*-');    % scale units
-%     title('1D condensate momentum profile');
-%     xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
-%     
-%     fname_str='nk1D';
-%     saveas(h_nk1D,[configs.files.dirout,fname_str,'.png']);
-%     saveas(h_nk1D,[configs.files.dirout,fname_str,'.fig']);
-% end
-% 
-% 
-% %%% LOG DIST
-% hist_lgk1D.binEdge=configs.hist.ed_lgk;     % get log-spaced edges
-% hist_lgk1D.binCent=sqrt(hist_lgk1D.binEdge(1:end-1).*hist_lgk1D.binEdge(2:end));   % GEOM avg bin centres
-% hist_lgk1D.N=histcounts(k_1D,hist_lgk1D.binEdge);	% use original data but bins are log-spaced
-% 
-% % evaluate number density
-% nden_lgk1D=(hist_lgk1D.N)./(nShot*detQE*k_perp_area*diff(hist_lgk1D.binEdge));  % normalised for: shot, QE, phase space volume
-% 
-% if verbose>0    % plot
-%     % far-field momentum space (log)
-%     h_nk1D_log=figure();
-%     loglog(1e-6*hist_lgk1D.binCent,...
-%         1e18*nden_lgk1D,'*-');     % scale units appropriately
-%     
-%     xlim([1e-1,2e1]);   %   limit x-axis to like Clement paper
-%     grid on;
-%     title('1D condensate momentum profile');
-%     xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
-%     
-%     fname_str='nk1D_loglog';
-%     saveas(h_nk1D_log,[configs.files.dirout,fname_str,'.png']);
-%     saveas(h_nk1D_log,[configs.files.dirout,fname_str,'.fig']);
-% end
+%%% n(k)k4
+nk4_collated=vertcat(nk4{:});
+nk4_avg=mean(nk4_collated,1);
+nk4_se=std(nk4_collated,1)/sqrt(size(size(nk4_collated,1)));
 
+% Plot
+h_nk4_aa=figure();
+semilogy(1e-6*hist_lgk1D.binCent,nk4_avg,'o');
 
-% %% n(k)k4 scaled plot
-% nk4_scaled=nden_lgk1D.*((hist_lgk1D.binCent).^4);
-% 
-% if verbose>0    % plot
-%     h_nk4=figure();
-%     semilogy(1e-6*hist_lgk1D.binCent,nk4_scaled,'*-');
-%     
-%     grid on;
-%     ylim([1e8,1e11]);       % y limits to like Clement PRL
-%     xlabel('$k$ [$\mu$m$^{-1}$]');
-%     ylabel('$k^{4}n_{\infty}(k)$ [m$^{-1}$]');
-%     
-%     fname_str='nk4_profile';
-%     saveas(h_nk4,[configs.files.dirout,fname_str,'.png']);
-%     saveas(h_nk4,[configs.files.dirout,fname_str,'.fig']);
-% end
+grid on;
+ylim([1e8,1e11]);       % y limits to like Clement PRL
+xlabel('$k$ [$\mu$m$^{-1}$]');
+ylabel('$k^{4}n_{\infty}(k)$ [m$^{-1}$]');
 
+fname_str='nk4_aa';
+saveas(h_nk4_aa,[configs.files.dirout,fname_str,'.png']);
+saveas(h_nk4_aa,[configs.files.dirout,fname_str,'.fig']);
 
 %% Fit to density profile
 % TODO
