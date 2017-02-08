@@ -7,7 +7,7 @@ verbose=2;
 %%% Raw data handling
 % files -  data file
 configs.files.path='C:\Users\HE BEC\Documents\lab\quantum-depletion\exp2\d';    % path to unindexed data file (e.g. 'a\b\datadir\$DATA_FNAME_TOKEN$')
-configs.files.id=1:500;          % file id numbers to use for analysis
+configs.files.id=1:2500;          % file id numbers to use for analysis
 configs.files.minCount=100;     % min counts to use for analysis
 
 
@@ -18,8 +18,13 @@ configs.rot_angle=0.61;     % angle in rad (exp default should be 0.61)
 %   XY window is applied after rotation
 %   window liberally for very long k-tail
 configs.window{1}=[0.54 0.585];      % T [s]
-configs.window{2}=[-35e-3,30e-3];    % X [m]
-configs.window{3}=[-40e-3,28e-3];    % Y [m]
+configs.window{2}=[-45e-3,40e-3];    % X [m]
+configs.window{3}=[-50e-3,38e-3];    % Y [m]
+
+
+% BEC locator - used for accurate location of condensate
+configs.bec.txy_pos=[0.567,-2e-3,-10e-3];       % approx bec location (get from DLD front panel)
+configs.bec.box_fwidth=[15e-3,20e-3,40e-3];     % txy full-width for box capt (be liberal-takes mean)
 
 
 %%% Experimental consts 
@@ -33,8 +38,8 @@ configs.const.tof=0.430;    % TOF for free-fall from trap to DLD
 %%% 1D slice
 % counts captured along a 1D line-slice from well "below" condensate to centre
 configs.slice.cyl_orient=1;     % slice through Z-axis (1:Z,2:X,3:Y)
-configs.slice.cyl_rad=4e-3;     % cyl radius [m]
-configs.slice.cyl_hgt=90e-3;    % cyl height [m]
+configs.slice.cyl_rad=1e-3;     % cyl radius [m]
+configs.slice.cyl_hgt=80e-3;    % cyl height [m]
 configs.slice.mincount=500;     % minimum count in 1D slice to pass
 
 % build cylinder dim
@@ -52,7 +57,7 @@ configs.hist.ed_lgk=logspace(5,7,100);   % 10^X [m^-1 == 1e-6 um^-1]
 
 %%% Angular averaging
 % Rotate around X-direction (radial plane is YZ)
-configs.axial_rot_angle=linspace(-pi/2,pi/2,3);     % angles to perform 1D analysis
+configs.axial_rot_angle=linspace(-pi/8,0,10);     % angles to perform 1D analysis
 
 %%% Fit to large-k tail
 % fitting region
