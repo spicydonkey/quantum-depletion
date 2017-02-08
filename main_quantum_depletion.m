@@ -13,6 +13,7 @@ vars_save={'path_config',...
     'r_1D','k_1D',...
     'r_perp_area','k_perp_area'...
     'hist_r1D','nden_r1D','nden_k1D',...
+    'nk4_scaled',...
     };
 
 
@@ -143,47 +144,14 @@ k_1D=r2k(r_1D);     % array of 1D k in [m^-1]
 r_perp_area=pi*(configs.slice.cyl_rad^2);       % real area of integrated dims
 k_perp_area=pi*(r2k(configs.slice.cyl_rad)^2);  % k area int area
 
-%%% LINEAR DIST (improved data structure)
-% hist_nbin=configs.hist.nbin;
-% [N_r1D,ed_r1D]=histcounts(r_1D,hist_nbin);  % lin hist - autoscale bins to lim
-% N_r1D=N_r1D/(nShot*detQE);  % normalise for a single shot and consider detector QE
-
-hist_r1D.binN=configs.hist.nbin;
+%%% LINEAR DIST
+hist_r1D.binN=configs.hist.nbin;    % get number of bins to set up auto
 [hist_r1D.N,hist_r1D.binEdge]=histcounts(r_1D,hist_r1D.binN);  % lin hist - autoscale bins to lim
 hist_r1D.binCent=0.5*(hist_r1D.binEdge(1:end-1)+hist_r1D.binEdge(2:end));   % arith avg to bin center
 
 % evaluate number density
-nden_r1D=hist_r1D.N./(nShot*detQE*r_perp_area*diff(hist_r1D.binEdge));  % normalised for: shot, QE, phase space volume
+nden_r1D=(hist_r1D.N)./(nShot*detQE*r_perp_area*diff(hist_r1D.binEdge));  % normalised for: shot, QE, phase space volume
 nden_k1D=(hbar*tof/m_He)^3*nden_r1D;    % number density (real space) to far-field momentum density
-
-% % number to density
-% n_r1D=N_r1D./(diff(ed_r1D)*r_perp_area);   % number density [m^-3]
-% n_kff=(hbar*tof/m_He)^3*n_r1D;  % number density (real space) to far-field momentum density
-
-% if verbose>0	% plot
-%     % real space density dist
-%     h_nr1D=figure();
-%     plot(1e3*(ed_r1D(1:end-1)+ed_r1D(2:end))/2,...
-%         1e-9*n_r1D,'--');
-%     title('1D condensate number profile');
-%     xlabel('$r$ [mm]'); ylabel('$n(r,\overline{t})$ [mm$^{-3}$]');
-%     
-%     fname_str='nr1D';
-%     saveas(h_nr1D,[configs.files.dirout,fname_str,'.png']);
-%     saveas(h_nr1D,[configs.files.dirout,fname_str,'.fig']);
-%     
-%     % far-field momentum space (lin)
-%     h_nkff=figure();
-%     ed_kff=(m_He/(hbar*tof))*ed_r1D;
-%     plot(1e-6*(ed_kff(1:end-1)+ed_kff(2:end))/2,...
-%         1e18*n_kff,'-');
-%     title('1D condensate momentum profile');
-%     xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
-%     
-%     fname_str='nkff';
-%     saveas(h_nkff,[configs.files.dirout,fname_str,'.png']);
-%     saveas(h_nkff,[configs.files.dirout,fname_str,'.fig']);
-% end
 
 if verbose>0    % plot
     % real-space density dist
@@ -209,47 +177,75 @@ if verbose>0    % plot
     saveas(h_nk1D,[configs.files.dirout,fname_str,'.fig']);
 end
 
-%%% LOG DIST
-ed_lgk=configs.hist.ed_lgk;         % get log-spaced edges
-N_lgk1D=histcounts(k_1D,ed_lgk);    % use original data but bins are log-spaced
-N_lgk1D=N_lgk1D/(nShot*detQE);      % normalise for single shot and detector QE
-d_ed_lgk=diff(ed_lgk);
-cent_ed_lgk=sqrt(ed_lgk(1:end-1).*ed_lgk(2:end));   % GEOMETRIC bin centres
+%%% LOG DIST (follow data structure adopted for LINEAR DIST)
 
-n_lgk1D=N_lgk1D./(d_ed_lgk*k_perp_area);       % number density [m^-3]
+% ed_lgk=configs.hist.ed_lgk;         % get log-spaced edges
+% cent_ed_lgk=sqrt(ed_lgk(1:end-1).*ed_lgk(2:end));   % GEOMETRIC bin centres
+% 
+% N_lgk1D=histcounts(k_1D,ed_lgk);    % use original data but bins are log-spaced
+% N_lgk1D=N_lgk1D/(nShot*detQE);      % normalise for single shot and detector QE
+% d_ed_lgk=diff(ed_lgk);
+% 
+% n_lgk1D=N_lgk1D./(d_ed_lgk*k_perp_area);       % number density [m^-3]
+% 
+% if verbose>0    % plot
+%     % far-field momentum space (log)
+%     h_nkff_log=figure();
+%     loglog(1e-6*cent_ed_lgk,...
+%         1e18*n_lgk1D,'*-');     % scale units appropriately
+%     
+%     xlim([1e-1,2e1]);   %   limit x-axis to like Clement paper
+%     grid on;
+%     title('1D condensate momentum profile');
+%     xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
+%     
+%     fname_str='nkff_log';
+%     saveas(h_nkff_log,[configs.files.dirout,fname_str,'.png']);
+%     saveas(h_nkff_log,[configs.files.dirout,fname_str,'.fig']);
+% end
+
+% improved below
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+hist_lgk1D.binEdge=configs.hist.ed_lgk;     % get log-spaced edges
+hist_lgk1D.binCent=sqrt(hist_lgk1D.binEdge(1:end-1).*hist_lgk1D.binEdge(2:end));   % GEOM avg bin centres
+hist_lgk1D.N=histcounts(k_1D,hist_lgk1D.binEdge);	% use original data but bins are log-spaced
+
+% evaluate number density
+nden_lgk1D=(hist_lgk1D.N)./(nShot*detQE*k_perp_area*diff(hist_lgk1D.binEdge));  % normalised for: shot, QE, phase space volume
 
 if verbose>0    % plot
     % far-field momentum space (log)
-    h_nkff_log=figure();
-    loglog(1e-6*cent_ed_lgk,...
-        1e18*n_lgk1D,'*-');     % scale units appropriately
+    h_nk1D_log=figure();
+    loglog(1e-6*hist_lgk1D.binCent,...
+        1e18*nden_lgk1D,'*-');     % scale units appropriately
     
     xlim([1e-1,2e1]);   %   limit x-axis to like Clement paper
     grid on;
     title('1D condensate momentum profile');
     xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
     
-    fname_str='nkff_log';
-    saveas(h_nkff_log,[configs.files.dirout,fname_str,'.png']);
-    saveas(h_nkff_log,[configs.files.dirout,fname_str,'.fig']);
+    fname_str='nk1D_loglog';
+    saveas(h_nk1D_log,[configs.files.dirout,fname_str,'.png']);
+    saveas(h_nk1D_log,[configs.files.dirout,fname_str,'.fig']);
 end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 %% n(k)k4 scaled plot
-n_scaled=n_lgk1D.*(cent_ed_lgk.^4);     % for nk4 plot
+nk4_scaled=nden_lgk1D.*((hist_lgk1D.binCent).^4);
 
 if verbose>0    % plot
-    h_scaled_nk=figure();
-    semilogy(1e-6*cent_ed_lgk,n_scaled,'*');
+    h_nk4=figure();
+    semilogy(1e-6*hist_lgk1D.binCent,nk4_scaled,'*-');
     
     grid on;
     ylim([1e8,1e11]);       % y limits to like Clement PRL
     xlabel('$k$ [$\mu$m$^{-1}$]');
     ylabel('$k^{4}n_{\infty}(k)$ [m$^{-1}$]');
     
-    fname_str='k4_scaled_dist';
-    saveas(h_scaled_nk,[configs.files.dirout,fname_str,'.png']);
-    saveas(h_scaled_nk,[configs.files.dirout,fname_str,'.fig']);
+    fname_str='nk4_profile';
+    saveas(h_nk4,[configs.files.dirout,fname_str,'.png']);
+    saveas(h_nk4,[configs.files.dirout,fname_str,'.fig']);
 end
 
 
