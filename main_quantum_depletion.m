@@ -13,6 +13,7 @@ vars_save={'path_config',...
     'r_1D','k_1D',...
     'r_perp_area','k_perp_area'...
     'hist_r1D','nden_r1D','nden_k1D',...
+    'hist_lgk1D','nden_lgk1D',...
     'nk4_scaled',...
     };
 
@@ -177,35 +178,8 @@ if verbose>0    % plot
     saveas(h_nk1D,[configs.files.dirout,fname_str,'.fig']);
 end
 
-%%% LOG DIST (follow data structure adopted for LINEAR DIST)
 
-% ed_lgk=configs.hist.ed_lgk;         % get log-spaced edges
-% cent_ed_lgk=sqrt(ed_lgk(1:end-1).*ed_lgk(2:end));   % GEOMETRIC bin centres
-% 
-% N_lgk1D=histcounts(k_1D,ed_lgk);    % use original data but bins are log-spaced
-% N_lgk1D=N_lgk1D/(nShot*detQE);      % normalise for single shot and detector QE
-% d_ed_lgk=diff(ed_lgk);
-% 
-% n_lgk1D=N_lgk1D./(d_ed_lgk*k_perp_area);       % number density [m^-3]
-% 
-% if verbose>0    % plot
-%     % far-field momentum space (log)
-%     h_nkff_log=figure();
-%     loglog(1e-6*cent_ed_lgk,...
-%         1e18*n_lgk1D,'*-');     % scale units appropriately
-%     
-%     xlim([1e-1,2e1]);   %   limit x-axis to like Clement paper
-%     grid on;
-%     title('1D condensate momentum profile');
-%     xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
-%     
-%     fname_str='nkff_log';
-%     saveas(h_nkff_log,[configs.files.dirout,fname_str,'.png']);
-%     saveas(h_nkff_log,[configs.files.dirout,fname_str,'.fig']);
-% end
-
-% improved below
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% LOG DIST
 hist_lgk1D.binEdge=configs.hist.ed_lgk;     % get log-spaced edges
 hist_lgk1D.binCent=sqrt(hist_lgk1D.binEdge(1:end-1).*hist_lgk1D.binEdge(2:end));   % GEOM avg bin centres
 hist_lgk1D.N=histcounts(k_1D,hist_lgk1D.binEdge);	% use original data but bins are log-spaced
@@ -228,7 +202,6 @@ if verbose>0    % plot
     saveas(h_nk1D_log,[configs.files.dirout,fname_str,'.png']);
     saveas(h_nk1D_log,[configs.files.dirout,fname_str,'.fig']);
 end
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 %% n(k)k4 scaled plot
