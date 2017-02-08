@@ -6,7 +6,7 @@ verbose=2;
 
 %%% Raw data handling
 % files -  data file
-configs.files.path='\\AMPLPC29\Users\TDC_user\ProgramFiles\my_read_tdc_gui_v1.0.1\dld_output\QuantumDepletion\Run3\d';    % path to unindexed data file (e.g. 'a\b\datadir\$DATA_FNAME_TOKEN$')
+configs.files.path='C:\Users\HE BEC\Documents\lab\quantum-depletion\exp2\d';    % path to unindexed data file (e.g. 'a\b\datadir\$DATA_FNAME_TOKEN$')
 configs.files.id=1:500;          % file id numbers to use for analysis
 configs.files.minCount=100;     % min counts to use for analysis
 
@@ -33,8 +33,8 @@ configs.const.tof=0.430;    % TOF for free-fall from trap to DLD
 %%% 1D slice
 % counts captured along a 1D line-slice from well "below" condensate to centre
 configs.slice.cyl_orient=1;     % slice through Z-axis (1:Z,2:X,3:Y)
-configs.slice.cyl_rad=3e-3;     % cyl radius [m]
-configs.slice.cyl_hgt=70e-3;    % cyl height [m]
+configs.slice.cyl_rad=4e-3;     % cyl radius [m]
+configs.slice.cyl_hgt=90e-3;    % cyl height [m]
 configs.slice.mincount=500;     % minimum count in 1D slice to pass
 
 % build cylinder dim
@@ -45,10 +45,14 @@ configs.slice.cyl_cent=zeros(1,3);
 configs.slice.cyl_cent(configs.slice.cyl_orient)=-0.5*configs.slice.cyl_hgt;
 
 %%% Histogramming
-configs.hist.nbin=500;   % used for real space and linear-k distribution
+configs.hist.nbin=100;   % used for real space and linear-k distribution
 % TODO - (log-spaced) bin edges to use in k-space --> simplifies anisotropic
 % analysis
-configs.hist.ed_lgk=logspace(5,7,10);   % 10^X [m^-1]
+configs.hist.ed_lgk=logspace(5,7,100);   % 10^X [m^-1 == 1e-6 um^-1]
+
+%%% Angular averaging
+% Rotate around X-direction (radial plane is YZ)
+configs.axial_rot_angle=linspace(-pi/2,pi/2,3);     % angles to perform 1D analysis
 
 %%% Fit to large-k tail
 % fitting region
