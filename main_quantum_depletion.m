@@ -258,14 +258,21 @@ end
 %%% k distribution - log-log
 nden_lgk_collated=vertcat(nden_lgk1D{:});   % collated k-density profile for all angles
 nden_lgk_avg=mean(nden_lgk_collated,1);     % angular averaged farfield k profile
-nden_lgk_se=std(nden_lgk_collated,1)/sqrt(size(nden_lgk_collated,1));   % standard error
+nden_lgk_std=std(nden_lgk_collated,1);      % standard deviation
+nden_lgk_se=nden_lgk_std/sqrt(size(nden_lgk_collated,1));	% standard error
 
 % Plot
 h_nk_log_aa=figure();
-loglog(1e-6*hist_lgk1D.binCent,...
-    1e18*nden_lgk_avg,'o');     % scale units appropriately
+% loglog(1e-6*hist_lgk1D.binCent,...
+%     1e18*nden_lgk_avg,'o');     % scale units appropriately
+mseb(1e-6*hist_lgk1D.binCent,1e18*nden_lgk_avg,...
+    1e18*nden_lgk_std);
 
-xlim([1e-1,2e1]);   %   limit x-axis to like Clement paper
+set(gca,'xScale','log');    % loglog scale
+set(gca,'yScale','log');
+
+xlim auto;
+% xlim([1e-1,2e1]);   %   limit x-axis to like Clement paper
 grid on;
 title('Angular averaged - 1D k profile');
 xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
@@ -278,11 +285,16 @@ saveas(h_nk_log_aa,[configs.files.dirout,fname_str,'.fig']);
 %%% n(k)k4
 nk4_collated=vertcat(nk4{:});       % collated nk4 profile for all angles
 nk4_avg=mean(nk4_collated,1);       % angular averaged
-nk4_se=std(nk4_collated,1)/sqrt(size(nk4_collated,1));  % standard error
+nk4_std=std(nk4_collated,1);
+nk4_se=nk4_std/sqrt(size(nk4_collated,1));  % standard error
 
 % Plot
 h_nk4_aa=figure();
-semilogy(1e-6*hist_lgk1D.binCent,nk4_avg,'o');
+% semilogy(1e-6*hist_lgk1D.binCent,nk4_avg,'o');
+mseb(1e-6*hist_lgk1D.binCent,nk4_avg,...
+    nk4_std);
+
+set(gca,'yScale','log');    % y scale log
 
 grid on;
 ylim([1e8,1e11]);       % y limits to like Clement PRL
