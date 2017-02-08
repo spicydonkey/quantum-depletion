@@ -276,10 +276,8 @@ nden_lgk_se=nden_lgk_std/sqrt(size(nden_lgk_collated,1));	% standard error
 
 % Plot
 h_nk_log_aa=figure();
-% loglog(1e-6*hist_lgk1D.binCent,...
-%     1e18*nden_lgk_avg,'o');     % scale units appropriately
 mseb(1e-6*hist_lgk1D.binCent,1e18*nden_lgk_avg,...
-    1e18*nden_lgk_se);  % NOTE: error in shaded error bar when error is larger than mean
+    1e18*nden_lgk_std);  % NOTE: error in shaded error bar when error is larger than mean
 
 set(gca,'xScale','log');    % loglog scale
 set(gca,'yScale','log');
@@ -303,9 +301,8 @@ nk4_se=nk4_std/sqrt(size(nk4_collated,1));  % standard error
 
 % Plot
 h_nk4_aa=figure();
-% semilogy(1e-6*hist_lgk1D.binCent,nk4_avg,'o');
 mseb(1e-6*hist_lgk1D.binCent,nk4_avg,...
-    nk4_se);        % NOTE: error in shaded error bar when error is larger than mean
+    nk4_std);        % NOTE: error in shaded error bar when error is larger than mean
 
 set(gca,'yScale','log');    % y scale log
 
