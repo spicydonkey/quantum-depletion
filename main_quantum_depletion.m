@@ -276,9 +276,9 @@ saveas(h_nk_log_aa,[configs.files.dirout,fname_str,'.fig']);
 
 
 %%% n(k)k4
-nk4_collated=vertcat(nk4{:});
-nk4_avg=mean(nk4_collated,1);
-nk4_se=std(nk4_collated,1)/sqrt(size(size(nk4_collated,1)));
+nk4_collated=vertcat(nk4{:});       % collated nk4 profile for all angles
+nk4_avg=mean(nk4_collated,1);       % angular averaged
+nk4_se=std(nk4_collated,1)/sqrt(size(nk4_collated,1));  % standard error
 
 % Plot
 h_nk4_aa=figure();
