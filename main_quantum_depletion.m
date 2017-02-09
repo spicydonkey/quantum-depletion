@@ -14,7 +14,8 @@ vars_save={'path_config',...
     'hist_r1D','nden_r1D','nden_k1D',...
     'hist_lgk1D','nden_lgk1D',...
     'nk4',...
-    'nden_lgk_avg','nden_lgk_std','nden_lgk_se'...
+    'nden_lgk_avg','nden_lgk_std','nden_lgk_se',...
+    'k4_fit'...
     };
 
 
@@ -321,8 +322,34 @@ fname_str='nk4_aa';
 saveas(h_nk4_aa,[configs.files.dirout,fname_str,'.png']);
 saveas(h_nk4_aa,[configs.files.dirout,fname_str,'.fig']);
 
-%% Fit to density profile
-% TODO
+%% Fit density profile
+% Negative power law fit to k-distribution at large k
+[~,I_qd]=min(abs(hist_lgk1D.binCent-configs.fit.k_min));  % get index from which to fit QD neg-power law
+k4_fit.QD.k=hist_lgk1D.binCent(I_qd:end);   % store data used for fitting
+k4_fit.QD.nk=nden_lgk_avg(I_qd:end);
+
+% Call the Matlab fitting routine
+k4_fit.QD.fit=fitnlm(k4_fit.QD.k,k4_fit.QD.nk,...
+    configs.fit.fun_negpowk,configs.fit.param0,...
+    'CoefficientNames',configs.fit.fun_coefname,...
+    'Options',configs.fit.opt);
+
+% Summarise fit
+disp(k4_fit.QD.fit);
+
+% build a sample of the fitted model's profile
+ratio_extrap=1.5;
+k4_fit.QD.k_fit=logspace(log10(min(k4_fit.QD.k)/ratio_extrap),log10(ratio_extrap*max(k4_fit.QD.k)),1000);   % indep var to evaluate fitted function
+k4_fit.QD.nk_fit=feval(k4_fit.QD.fit,k4_fit.QD.k_fit);  % evaluate fitted model
+
+% Plot
+figure(h_nk_log_aa); hold on;
+loglog(1e-6*k4_fit.QD.k_fit,1e18*k4_fit.QD.nk_fit,'k--');
+
+% Save plot
+fname_str='nk_fit';
+saveas(h_nk_log_aa,[configs.files.dirout,fname_str,'.png']);
+saveas(h_nk_log_aa,[configs.files.dirout,fname_str,'.fig']);
 
 
 %% Save data
