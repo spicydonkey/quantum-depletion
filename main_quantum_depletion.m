@@ -4,7 +4,7 @@
 clear all; close all; clc;
 
 %%% USER INPUTS
-path_config='C:\Users\HE BEC\Documents\MATLAB\quantum-depletion\config_060217_test.m';
+path_config='C:\Users\HE BEC\Documents\MATLAB\quantum-depletion\config_090217_run3_theta_search.m';
 
 % vars to save to output
 vars_save={'path_config',...
@@ -26,16 +26,14 @@ t_main_start=tic;
 % load config
 run(path_config);
 
-% Load misc params
+% load misc params
 hbar=configs.const.hbar;
 m_He=configs.const.m_He;
 tof=configs.const.tof;
 vz=9.8*tof;     % atom free-fall vert v at detector hit for T-to-Z conversion;
 detQE=configs.const.detect_qe;
 
-%%% evaluate params for analysis
-r_perp_area=pi*(configs.slice.cyl_rad^2);       % real area of integrated dims
-k_perp_area=pi*(r2k(configs.slice.cyl_rad)^2);  % k area int area
+
 
 hist_r1D.binN=configs.hist.nbin;    % get number of bins to set up auto
 
@@ -95,13 +93,18 @@ if verbose>1
 end
 
 
-%% 1D calculation
-num_rot_angle=length(configs.axial_rot_angle);
+%% METHOD 1: 1D-radial cylinder analysis
+num_rot_angle=length(configs.axial_rot_angle);  % number of rotation angles to do analysis
 
-Nmin_1D=configs.slice.mincount;     % minimum count in 1D slice to pass
-N_slice_all=zeros(num_rot_angle,nShot_raw);        % number captured in 1D slice
+Nmin_1D=configs.slice.mincount;     % minimum num reqd in 1D cyl to pass
+N_slice_all=zeros(num_rot_angle,nShot_raw);     % store number captured in 1D slice
 
-hist_r1D.binN=configs.hist.nbin;    % get number of bins to set up auto
+% phase space volume params
+r_perp_area=pi*(configs.slice.cyl_rad^2);       % real area of integrated dims
+k_perp_area=pi*(r2k(configs.slice.cyl_rad)^2);  % k area int area
+
+% histogram params
+hist_r1D.binN=configs.hist.nbin;    % get number of bins to set up (auto) for linear n profile
 
 hist_lgk1D.binEdge=configs.hist.ed_lgk;     % get log-spaced edges
 hist_lgk1D.binCent=sqrt(hist_lgk1D.binEdge(1:end-1).*hist_lgk1D.binEdge(2:end));   % GEOM avg bin centres
@@ -129,7 +132,7 @@ for i=1:num_rot_angle     % rotate whole zxy to sample 1D slice with angular shi
         % TODO - skipping low count in slice for now
         % could check for n_captured
         % filter shots based on counts in 1D slice
-        % PREV CODE:
+        % OLD CODE (VARS MAY BE OBSOLETE):
 %         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %         if n_captured>Nmin_1D
 %             txy_0{counter}=txy_0_temp;
@@ -220,9 +223,11 @@ for i=1:num_rot_angle     % rotate whole zxy to sample 1D slice with angular shi
         title('1D condensate momentum profile');
         xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
         
-        fname_str='nk1D';
-        saveas(h_nk1D,[configs.files.dirout,fname_str,'.png']);
-        saveas(h_nk1D,[configs.files.dirout,fname_str,'.fig']);
+        if i==num_rot_angle     % save after all plotted
+            fname_str='nk1D';
+            saveas(h_nk1D,[configs.files.dirout,fname_str,'.png']);
+            saveas(h_nk1D,[configs.files.dirout,fname_str,'.fig']);
+        end
     end
     
     %% LOG DIST
@@ -246,9 +251,11 @@ for i=1:num_rot_angle     % rotate whole zxy to sample 1D slice with angular shi
         title('1D condensate momentum profile');
         xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
         
-        fname_str='nk1D_loglog';
-        saveas(h_nk1D_log,[configs.files.dirout,fname_str,'.png']);
-        saveas(h_nk1D_log,[configs.files.dirout,fname_str,'.fig']);
+        if i==num_rot_angle     % save after all plotted
+            fname_str='nk1D_loglog';
+            saveas(h_nk1D_log,[configs.files.dirout,fname_str,'.png']);
+            saveas(h_nk1D_log,[configs.files.dirout,fname_str,'.fig']);
+        end
     end
     
     %% Evaluate n(k)k4 scaled plot
@@ -267,15 +274,18 @@ for i=1:num_rot_angle     % rotate whole zxy to sample 1D slice with angular shi
         xlabel('$k$ [$\mu$m$^{-1}$]');
         ylabel('$k^{4}n_{\infty}(k)$ [m$^{-1}$]');
         
-        fname_str='nk4';
-        saveas(h_nk4,[configs.files.dirout,fname_str,'.png']);
-        saveas(h_nk4,[configs.files.dirout,fname_str,'.fig']);
+        if i==num_rot_angle     % save after all plotted
+            fname_str='nk4';
+            saveas(h_nk4,[configs.files.dirout,fname_str,'.png']);
+            saveas(h_nk4,[configs.files.dirout,fname_str,'.fig']);
+        end
     end
 end
 
-%% Thin angular section - new method
-cyl_dtheta=diff(configs.section_theta_lims);
-cyl_dktrans=2*r2k(configs.section_trans_hwidth);
+%% METHOD 2: Cylindrical sector for angular averaging
+% get cylindrical sector params
+cyl_dtheta=diff(configs.cylsect_theta_lims);
+cyl_dktrans=2*r2k(configs.cylsect_trans_hwidth);
 
 % convert BEC centered real-space counts to cylindrically symmetric coord system
 % FORMAT: R_CYL = (rad_plane,theta,dist_transverse)
@@ -295,26 +305,26 @@ for i=1:nShot_raw
 end
 
 % crop to region of interest for binning k
-k_cyl_section=cell(size(k_cyl));
+k_cyl_sect=cell(size(k_cyl));
 for i=1:nShot_raw
-    k_cyl_section{i}=k_cyl{i};  % get everything
+    k_cyl_sect{i}=k_cyl{i};  % get everything
     
     % cull to angular lims
-    theta_tmp=k_cyl_section{i}(:,2);	% [-pi,pi]
-    theta_tmp=wrapTo2Pi(theta_tmp-configs.section_theta_lims(1));   % zero angle to start of lim
-    ind_tmp=(theta_tmp<cyl_dtheta);   % indices lying in defined angular section
+    theta_tmp=k_cyl_sect{i}(:,2);	% [-pi,pi]
+    theta_tmp=wrapTo2Pi(theta_tmp-configs.cylsect_theta_lims(1));   % zero angle to start of lim
+    ind_tmp=(theta_tmp<cyl_dtheta);   % indices lying in defined angular sector
     
-    k_cyl_section{i}=k_cyl_section{i}(ind_tmp,:);   % cull
+    k_cyl_sect{i}=k_cyl_sect{i}(ind_tmp,:);   % cull
     
     % cull to transverse width
-    k_trans_tmp=k_cyl_section{i}(:,3);  % transverse k
-    ind_tmp=(abs(k_trans_tmp)<r2k(configs.section_trans_hwidth));   % indices lying in defined angular section
+    k_trans_tmp=k_cyl_sect{i}(:,3);  % transverse k
+    ind_tmp=(abs(k_trans_tmp)<r2k(configs.cylsect_trans_hwidth));   % indices lying in defined angular section
     
-    k_cyl_section{i}=k_cyl_section{i}(ind_tmp,:);   % cull
+    k_cyl_sect{i}=k_cyl_sect{i}(ind_tmp,:);   % cull
 end
 
 % Get 1D-k
-k_1D_cyl=vertcat(k_cyl_section{:});
+k_1D_cyl=vertcat(k_cyl_sect{:});
 k_1D_cyl=k_1D_cyl(:,1);
 
 %%% Histogram
@@ -457,4 +467,7 @@ for i = 1:length(vars_save)
 end
 
 %% END
-elapsedTime=toc(t_main_start);
+t_main_end=toc(t_main_start);
+disp('-----------------------------------------------');
+fprintf('Total elapsed time (s): %7.1f\n',t_main_end);
+disp('===================ALL TASKS COMPLETED===================');
