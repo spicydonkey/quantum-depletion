@@ -35,11 +35,9 @@ configs.const.tof=0.430;    % TOF for free-fall from trap to DLD
 
 
 %% Quantum depletion specific
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Angular integration over radial profile (new method)
-configs.section_theta_lims=[pi/8,pi/8];    % in-radial plane angle lims for angular averaging
-configs.section_trans_hwidth=1e-3;          % transverse averaging half width [m]
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Angular integration over radial profile - Cylindrical sector
+configs.cylsect_theta_lims=[-pi/4,pi/4];    % in-radial plane angle lims for angular averaging
+configs.cylsect_trans_hwidth=5e-3;          % transverse averaging half width [m]
 
 %%% 1D slice
 % counts captured along a 1D line-slice from well "below" condensate to centre
