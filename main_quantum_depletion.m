@@ -16,6 +16,7 @@ vars_save={'path_config',...
     'nk4',...
     'nden_lgk_avg','nden_lgk_std','nden_lgk_se',...
     'k4_fit'...
+    'hist_k_cyl_1D','nden_k_cyl_1D'...
     };
 
 
@@ -270,6 +271,100 @@ for i=1:num_rot_angle     % rotate whole zxy to sample 1D slice with angular shi
         saveas(h_nk4,[configs.files.dirout,fname_str,'.png']);
         saveas(h_nk4,[configs.files.dirout,fname_str,'.fig']);
     end
+end
+
+%% Thin angular section - new method
+cyl_dtheta=diff(configs.section_theta_lims);
+cyl_dktrans=2*r2k(configs.section_trans_hwidth);
+
+% convert BEC centered real-space counts to cylindrically symmetric coord system
+% FORMAT: R_CYL = (rad_plane,theta,dist_transverse)
+R0_cyl=cell(size(zxy_0));
+for i=1:nShot_raw
+    R0_cyl{i}=zeros(size(zxy_0{i}));
+    R0_cyl{i}(:,1)=sqrt(sum(zxy_0{i}(:,[1,3]).^2,2));   % get in-plane radius [m]
+    R0_cyl{i}(:,2)=atan2(zxy_0{i}(:,1),zxy_0{i}(:,3))+pi/2;     % theta origin is pointing "down" in Z [-pi,pi]
+    R0_cyl{i}(:,3)=zxy_0{i}(:,2);       % transverse direction is in X [m]
+end
+
+% convert cylindrical R to k-space
+k_cyl=R0_cyl;
+for i=1:nShot_raw
+    k_cyl{i}(:,1)=r2k(k_cyl{i}(:,1));
+    k_cyl{i}(:,3)=r2k(k_cyl{i}(:,3));
+end
+
+% crop to region of interest for binning k
+k_cyl_section=cell(size(k_cyl));
+for i=1:nShot_raw
+    k_cyl_section{i}=k_cyl{i};  % get everything
+    
+    % cull to angular lims
+    theta_tmp=k_cyl_section{i}(:,2);	% [-pi,pi]
+    theta_tmp=wrapTo2Pi(theta_tmp-configs.section_theta_lims(1));   % zero angle to start of lim
+    ind_tmp=(theta_tmp<cyl_dtheta);   % indices lying in defined angular section
+    
+    k_cyl_section{i}=k_cyl_section{i}(ind_tmp,:);   % cull
+    
+    % cull to transverse width
+    k_trans_tmp=k_cyl_section{i}(:,3);  % transverse k
+    ind_tmp=(abs(k_trans_tmp)<r2k(configs.section_trans_hwidth));   % indices lying in defined angular section
+    
+    k_cyl_section{i}=k_cyl_section{i}(ind_tmp,:);   % cull
+end
+
+% Get 1D-k
+k_1D_cyl=vertcat(k_cyl_section{:});
+k_1D_cyl=k_1D_cyl(:,1);
+
+%%% Histogram
+% get hist params
+hist_k_cyl_1D.binEdge=configs.hist.ed_lgk;     % get log-spaced edges
+hist_k_cyl_1D.binCent=sqrt(hist_k_cyl_1D.binEdge(1:end-1).*hist_k_cyl_1D.binEdge(2:end));   % GEOM avg bin centres
+
+hist_k_cyl_1D.N=histcounts(k_1D_cyl,hist_k_cyl_1D.binEdge);
+
+% evaluate number density
+dk_cyl_volume=cyl_dktrans*cyl_dtheta*(hist_k_cyl_1D.binCent).*diff(hist_k_cyl_1D.binEdge);     % phase space volume in k
+nden_k_cyl_1D=(hist_k_cyl_1D.N)./(nShot_raw*detQE*dk_cyl_volume);  % normalised for: shot, QE, phase space volume
+
+if verbose>0    % plot
+    % far-field momentum space (log)
+    h_nk_cyl_1D_log=figure();
+    figure(h_nk_cyl_1D_log);
+    
+    loglog(1e-6*nden_k_cyl_1D.binCent,...
+        1e18*nden_k_cyl_1D,'*-');     % scale units appropriately
+    hold on;
+    
+    xlim([1e-1,2e1]);   %   limit x-axis to like Clement paper
+    grid on;
+    title('1D condensate momentum profile - cylindrical capture');
+    xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
+    
+    fname_str='nk_cyl_1D_loglog';
+    saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'.png']);
+    saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'.fig']);
+end
+
+%%% Evaluate nk4
+nk4_cyl=nden_k_cyl_1D.*((hist_k_cyl_1D.binCent).^4);
+
+if verbose>0    % plot
+    h_nk4_cyl=figure();
+    figure(h_nk4_cyl);
+    
+    semilogy(1e-6*hist_k_cyl_1D.binCent,nk4_cyl{i},'*-');
+    hold on;
+    
+    grid on;
+    ylim([1e8,1e11]);       % y limits to like Clement PRL
+    xlabel('$k$ [$\mu$m$^{-1}$]');
+    ylabel('$k^{4}n_{\infty}(k)$ [m$^{-1}$]');
+    
+    fname_str='nk4_cyl';
+    saveas(h_nk4_cyl,[configs.files.dirout,fname_str,'.png']);
+    saveas(h_nk4_cyl,[configs.files.dirout,fname_str,'.fig']);
 end
 
 
