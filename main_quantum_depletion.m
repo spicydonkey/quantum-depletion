@@ -14,6 +14,7 @@ vars_save={'path_config',...
     'hist_r1D','nden_r1D','nden_k1D',...
     'hist_lgk1D','nden_lgk1D',...
     'nk4',...
+    'nden_lgk_avg','nden_lgk_std','nden_lgk_se'...
     };
 
 
@@ -172,6 +173,11 @@ for i=1:num_rot_angle     % rotate whole zxy to sample 1D slice with angular shi
     % collate and collapse all captured count to 1D
     r_1D=abs(vertcat(zxy_slice_tmp{:}));
     r_1D=r_1D(:,configs.slice.cyl_orient);	% 1D culled data in real-space
+
+%     % collate all captured count in 1D-cyl slice from cond centre
+%     r_1D=vertcat(zxy_slice_tmp{:});
+%     % get magnitude to build array of 1D radial vectors
+%     r_1D=sqrt(sum((r_1D.^2),2));    % NOTE: numerical error large for small r
     
     % r to k
     k_1D=r2k(r_1D);     % array of 1D k in [m^-1]
