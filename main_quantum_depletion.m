@@ -333,7 +333,7 @@ if verbose>0    % plot
     h_nk_cyl_1D_log=figure();
     figure(h_nk_cyl_1D_log);
     
-    loglog(1e-6*nden_k_cyl_1D.binCent,...
+    loglog(1e-6*hist_k_cyl_1D.binCent,...
         1e18*nden_k_cyl_1D,'*-');     % scale units appropriately
     hold on;
     
@@ -354,7 +354,7 @@ if verbose>0    % plot
     h_nk4_cyl=figure();
     figure(h_nk4_cyl);
     
-    semilogy(1e-6*hist_k_cyl_1D.binCent,nk4_cyl{i},'*-');
+    semilogy(1e-6*hist_k_cyl_1D.binCent,nk4_cyl,'*-');
     hold on;
     
     grid on;
