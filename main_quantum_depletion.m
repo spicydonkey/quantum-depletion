@@ -4,7 +4,7 @@
 clear all; close all; clc;
 
 %%% USER INPUTS
-path_config='C:\Users\HE BEC\Documents\MATLAB\quantum-depletion\config_090217_run3_theta_search.m';
+path_config='C:\Users\HE BEC\Documents\MATLAB\quantum-depletion\config_test.m';
 
 % vars to save to output
 vars_save={'path_config',...
@@ -427,7 +427,9 @@ fname_str='nk4_aa';
 saveas(h_nk4_aa,[configs.files.dirout,fname_str,'.png']);
 saveas(h_nk4_aa,[configs.files.dirout,fname_str,'.fig']);
 
+
 %% Fit density profile
+%%% METHOD 1
 % Negative power law fit to k-distribution at large k
 [~,I_qd]=min(abs(hist_lgk1D.binCent-configs.fit.k_min));  % get index from which to fit QD neg-power law
 k4_fit.QD.k=hist_lgk1D.binCent(I_qd:end);   % store data used for fitting
@@ -455,6 +457,35 @@ loglog(1e-6*k4_fit.QD.k_fit,1e18*k4_fit.QD.nk_fit,'k--');
 fname_str='nk_fit';
 saveas(h_nk_log_aa,[configs.files.dirout,fname_str,'.png']);
 saveas(h_nk_log_aa,[configs.files.dirout,fname_str,'.fig']);
+
+
+%%% METHOD 2
+% I_qd is shared
+% [~,I_qd]=min(abs(hist_k_cyl_1D.binCent-configs.fit.k_min));  % get index from which to fit QD neg-power law
+k4cyl_fit.QD.k=hist_k_cyl_1D.binCent(I_qd:end);   % store data used for fitting
+k4cyl_fit.QD.nk=nden_k_cyl_1D(I_qd:end);
+
+k4cyl_fit.QD.fit=fitnlm(k4cyl_fit.QD.k,k4cyl_fit.QD.nk,...
+    configs.fit.fun_negpowk,configs.fit.param0,...
+    'CoefficientNames',configs.fit.fun_coefname,...
+    'Options',configs.fit.opt);
+
+% Summarise fit
+disp(k4cyl_fit.QD.fit);
+
+% build a sample of the fitted model's profile
+% ratio_extrap=1.5;
+k4cyl_fit.QD.k_fit=logspace(log10(min(k4cyl_fit.QD.k)/ratio_extrap),log10(ratio_extrap*max(k4cyl_fit.QD.k)),1000);   % indep var to evaluate fitted function
+k4cyl_fit.QD.nk_fit=feval(k4cyl_fit.QD.fit,k4cyl_fit.QD.k_fit);  % evaluate fitted model
+
+% Plot
+figure(h_nk_cyl_1D_log); hold on;
+loglog(1e-6*k4cyl_fit.QD.k_fit,1e18*k4cyl_fit.QD.nk_fit,'k--');
+
+% Save plot
+fname_str='nk_cyl_fit';
+saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'.png']);
+saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'.fig']);
 
 
 %% Save data
