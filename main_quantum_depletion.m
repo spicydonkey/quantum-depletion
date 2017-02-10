@@ -286,6 +286,9 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % background k-density profile
+bgd_r_perp_area=pi*(configs.bgd_cyl_rad^2);       % real area of integrated dims
+bgd_k_perp_area=pi*(r2k(configs.bgd_cyl_rad)^2);  % k area int area
+
 hist_r1D_bgd.binN=configs.hist.nbin;
 
 hist_lgk1D_bgd.binEdge=configs.hist.ed_lgk;     % get log-spaced edges
@@ -305,7 +308,7 @@ bgd_k_1D=r2k(bgd_r_1D);     % r to k
 [hist_r1D_bgd.N,hist_r1D_bgd.binEdge]=histcounts(bgd_r_1D,hist_r1D_bgd.binN);  % lin hist - autoscale bins to lim
 hist_r1D_bgd.binCent=0.5*(hist_r1D_bgd.binEdge(1:end-1)+hist_r1D_bgd.binEdge(2:end));   % arith avg to bin center
 
-nden_bgdr1D=(hist_r1D_bgd.N)./(nShot_raw*detQE*r_perp_area*diff(hist_r1D_bgd.binEdge));  % normalised for: shot, QE, phase space volume
+nden_bgdr1D=(hist_r1D_bgd.N)./(nShot_raw*detQE*bgd_r_perp_area*diff(hist_r1D_bgd.binEdge));  % normalised for: shot, QE, phase space volume
 nden_bgdk1D=(hbar*tof/m_He)^3*nden_bgdr1D;    % number density (real space) to far-field momentum density
 
 % if verbose>0    % plot
@@ -334,7 +337,7 @@ nden_bgdk1D=(hbar*tof/m_He)^3*nden_bgdr1D;    % number density (real space) to f
 
 %%% Log
 hist_lgk1D_bgd.N=histcounts(bgd_k_1D,hist_lgk1D_bgd.binEdge);	% use original data but bins are log-spaced
-nden_bgdlgk1D=(hist_lgk1D_bgd.N)./(nShot_raw*detQE*k_perp_area*diff(hist_lgk1D_bgd.binEdge));  % normalised for: shot, QE, phase space volume
+nden_bgdlgk1D=(hist_lgk1D_bgd.N)./(nShot_raw*detQE*bgd_k_perp_area*diff(hist_lgk1D_bgd.binEdge));  % normalised for: shot, QE, phase space volume
 
 if verbose>0    % plot
     % far-field momentum space (log)
