@@ -16,7 +16,9 @@ vars_save={'path_config',...
     'nk4',...
     'nden_lgk_avg','nden_lgk_std','nden_lgk_se',...
     'k4_fit'...
-    'hist_k_cyl_1D','nden_k_cyl_1D'...
+    'hist_k_cyl_1D','nden_k_cyl_1D',...
+    'nden_k_cyl_avg','nden_k_cyl_std','nden_k_cyl_se',...
+    'k4cyl_fit'...
     };
 
 
@@ -108,7 +110,7 @@ hist_r1D.binN=configs.hist.nbin;    % get number of bins to set up (auto) for li
 
 hist_lgk1D.binEdge=configs.hist.ed_lgk;     % get log-spaced edges
 hist_lgk1D.binCent=sqrt(hist_lgk1D.binEdge(1:end-1).*hist_lgk1D.binEdge(2:end));   % GEOM avg bin centres
-
+        
 for i=1:num_rot_angle     % rotate whole zxy to sample 1D slice with angular shift
     x_thetha_tmp=configs.axial_rot_angle(i);    % rotation angle
     
@@ -282,6 +284,77 @@ for i=1:num_rot_angle     % rotate whole zxy to sample 1D slice with angular shi
     end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% background k-density profile
+hist_r1D_bgd.binN=configs.hist.nbin;
+
+hist_lgk1D_bgd.binEdge=configs.hist.ed_lgk;     % get log-spaced edges
+hist_lgk1D_bgd.binCent=sqrt(hist_lgk1D_bgd.binEdge(1:end-1).*hist_lgk1D_bgd.binEdge(2:end));   % GEOM avg bin centres
+
+bgd_zxy=cell(nShot_raw,1);
+for i=1:nShot_raw
+    bgd_zxy{i}=cylindercull(zxy_0{i},configs.bgd_cyl_cent,...
+        configs.bgd_cyl_dim,configs.bgd_cyl_orient);
+end
+bgd_r_1D=abs(vertcat(bgd_zxy{:}));
+bgd_r_1D=bgd_r_1D(:,configs.bgd_cyl_orient);	% 1D culled data in real-space
+bgd_k_1D=r2k(bgd_r_1D);     % r to k
+
+% Density profile
+%%% Linear
+[hist_r1D_bgd.N,hist_r1D_bgd.binEdge]=histcounts(bgd_r_1D,hist_r1D_bgd.binN);  % lin hist - autoscale bins to lim
+hist_r1D_bgd.binCent=0.5*(hist_r1D_bgd.binEdge(1:end-1)+hist_r1D_bgd.binEdge(2:end));   % arith avg to bin center
+
+nden_bgdr1D=(hist_r1D_bgd.N)./(nShot_raw*detQE*r_perp_area*diff(hist_r1D_bgd.binEdge));  % normalised for: shot, QE, phase space volume
+nden_bgdk1D=(hbar*tof/m_He)^3*nden_bgdr1D;    % number density (real space) to far-field momentum density
+
+% if verbose>0    % plot
+%     % real-space density dist
+%     figure(h_nr1D); hold on;
+%     plot(1e3*hist_r1D_bgd.binCent,...
+%         1e-9*nden_bgdr1D,'*-');    % scale units
+%     title('1D condensate number profile');
+%     xlabel('$r$ [mm]'); ylabel('$n(r,\overline{t})$ [mm$^{-3}$]');
+%     
+%     fname_str='nr1D_bgd';
+%     saveas(h_nr1D,[configs.files.dirout,fname_str,'.png']);
+%     saveas(h_nr1D,[configs.files.dirout,fname_str,'.fig']);
+%     
+%     % far-field momentum space
+%     figure(h_nk1D); hold on;
+%     plot(1e-6*r2k(hist_r1D_bgd.binCent),...
+%         1e18*nden_bgdk1D,'*-');    % scale units
+%     title('1D condensate momentum profile');
+%     xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
+%     
+%     fname_str='nk1D_bgd';
+%     saveas(h_nk1D,[configs.files.dirout,fname_str,'.png']);
+%     saveas(h_nk1D,[configs.files.dirout,fname_str,'.fig']);
+% end
+
+%%% Log
+hist_lgk1D_bgd.N=histcounts(bgd_k_1D,hist_lgk1D_bgd.binEdge);	% use original data but bins are log-spaced
+nden_bgdlgk1D=(hist_lgk1D_bgd.N)./(nShot_raw*detQE*k_perp_area*diff(hist_lgk1D_bgd.binEdge));  % normalised for: shot, QE, phase space volume
+
+if verbose>0    % plot
+    % far-field momentum space (log)
+    figure(h_nk1D_log); hold on;
+    loglog(1e-6*hist_lgk1D_bgd.binCent,...
+        1e18*nden_bgdlgk1D,'*-');     % scale units appropriately
+    hold on;
+    
+    xlim([1e-1,2e1]);   %   limit x-axis to like Clement paper
+    grid on;
+    title('1D condensate momentum profile');
+    xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
+    
+    fname_str='nk1D_loglog_bgd';
+    saveas(h_nk1D_log,[configs.files.dirout,fname_str,'.png']);
+    saveas(h_nk1D_log,[configs.files.dirout,fname_str,'.fig']);
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 %% METHOD 2: Cylindrical sector for angular averaging
 % get cylindrical sector params
 cyl_dtheta=diff(configs.cylsect_theta_lims);
@@ -324,28 +397,44 @@ for i=1:nShot_raw
 end
 
 % Get 1D-k
-k_1D_cyl=vertcat(k_cyl_sect{:});
-k_1D_cyl=k_1D_cyl(:,1);
+k_1D_cyl=cell(nShot_raw,1);    % get shot-wise cell array of k
+for i=1:nShot_raw
+    k_1D_cyl{i}=k_cyl_sect{i}(:,1);
+end
+% k_1D_cyl=vertcat(k_cyl_sect{:});
+% k_1D_cyl=k_1D_cyl(:,1);
 
 %%% Histogram
 % get hist params
 hist_k_cyl_1D.binEdge=configs.hist.ed_lgk;     % get log-spaced edges
 hist_k_cyl_1D.binCent=sqrt(hist_k_cyl_1D.binEdge(1:end-1).*hist_k_cyl_1D.binEdge(2:end));   % GEOM avg bin centres
 
-hist_k_cyl_1D.N=histcounts(k_1D_cyl,hist_k_cyl_1D.binEdge);
+dk_cyl_volume=cyl_dktrans*cyl_dtheta*(hist_k_cyl_1D.binCent).*diff(hist_k_cyl_1D.binEdge);     % phase space volume in k
+
+hist_k_cyl_1D.N=cell(nShot_raw,1);
+nden_k_cyl_1D=cell(nShot_raw,1);
+for i=1:nShot_raw
+    hist_k_cyl_1D.N{i}=histcounts(k_1D_cyl{i},hist_k_cyl_1D.binEdge);   % single-shot
+    nden_k_cyl_1D{i}=(hist_k_cyl_1D.N{i})./(detQE*dk_cyl_volume);  % normalised for: QE, phase space volume
+end
+% hist_k_cyl_1D.N=histcounts(k_1D_cyl,hist_k_cyl_1D.binEdge);
 
 % evaluate number density
-dk_cyl_volume=cyl_dktrans*cyl_dtheta*(hist_k_cyl_1D.binCent).*diff(hist_k_cyl_1D.binEdge);     % phase space volume in k
-nden_k_cyl_1D=(hist_k_cyl_1D.N)./(nShot_raw*detQE*dk_cyl_volume);  % normalised for: shot, QE, phase space volume
+% nden_k_cyl_1D=(hist_k_cyl_1D.N)./(nShot_raw*detQE*dk_cyl_volume);  % normalised for: shot, QE, phase space volume
 
 if verbose>0    % plot
     % far-field momentum space (log)
     h_nk_cyl_1D_log=figure();
     figure(h_nk_cyl_1D_log);
-    
-    loglog(1e-6*hist_k_cyl_1D.binCent,...
-        1e18*nden_k_cyl_1D,'*-');     % scale units appropriately
     hold on;
+    
+    for i=1:nShot_raw
+        plot(1e-6*hist_k_cyl_1D.binCent,...
+            1e18*nden_k_cyl_1D{i},'.-');     % scale units appropriately
+    end
+    
+    set(gca,'xScale','log');
+    set(gca,'yScale','log');
     
     xlim([1e-1,2e1]);   %   limit x-axis to like Clement paper
     grid on;
@@ -357,29 +446,30 @@ if verbose>0    % plot
     saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'.fig']);
 end
 
-%%% Evaluate nk4
-nk4_cyl=nden_k_cyl_1D.*((hist_k_cyl_1D.binCent).^4);
-
-if verbose>0    % plot
-    h_nk4_cyl=figure();
-    figure(h_nk4_cyl);
-    
-    semilogy(1e-6*hist_k_cyl_1D.binCent,nk4_cyl,'*-');
-    hold on;
-    
-    grid on;
-    ylim([1e8,1e11]);       % y limits to like Clement PRL
-    xlabel('$k$ [$\mu$m$^{-1}$]');
-    ylabel('$k^{4}n_{\infty}(k)$ [m$^{-1}$]');
-    
-    fname_str='nk4_cyl';
-    saveas(h_nk4_cyl,[configs.files.dirout,fname_str,'.png']);
-    saveas(h_nk4_cyl,[configs.files.dirout,fname_str,'.fig']);
-end
+% %%% Evaluate nk4
+% nk4_cyl=nden_k_cyl_1D.*((hist_k_cyl_1D.binCent).^4);
+% 
+% if verbose>0    % plot
+%     h_nk4_cyl=figure();
+%     figure(h_nk4_cyl);
+%     
+%     semilogy(1e-6*hist_k_cyl_1D.binCent,nk4_cyl,'*-');
+%     hold on;
+%     
+%     grid on;
+%     ylim([1e8,1e11]);       % y limits to like Clement PRL
+%     xlabel('$k$ [$\mu$m$^{-1}$]');
+%     ylabel('$k^{4}n_{\infty}(k)$ [m$^{-1}$]');
+%     
+%     fname_str='nk4_cyl';
+%     saveas(h_nk4_cyl,[configs.files.dirout,fname_str,'.png']);
+%     saveas(h_nk4_cyl,[configs.files.dirout,fname_str,'.fig']);
+% end
 
 
 %% Statistical summary
 % TODO - do for all other data
+%%%% METHOD 1
 %%% k distribution - log-log
 nden_lgk_collated=vertcat(nden_lgk1D{:});   % collated k-density profile for all angles
 nden_lgk_avg=mean(nden_lgk_collated,1);     % angular averaged farfield k profile
@@ -390,6 +480,11 @@ nden_lgk_se=nden_lgk_std/sqrt(size(nden_lgk_collated,1));	% standard error
 h_nk_log_aa=figure();
 mseb(1e-6*hist_lgk1D.binCent,1e18*nden_lgk_avg,...
     1e18*nden_lgk_std);  % NOTE: error in shaded error bar when error is larger than mean
+
+% plot background count distribution
+hold on;
+loglog(1e-6*hist_lgk1D_bgd.binCent,...
+        1e18*nden_bgdlgk1D,'*-');     % scale units appropriately
 
 set(gca,'xScale','log');    % loglog scale
 set(gca,'yScale','log');
@@ -427,6 +522,35 @@ fname_str='nk4_aa';
 saveas(h_nk4_aa,[configs.files.dirout,fname_str,'.png']);
 saveas(h_nk4_aa,[configs.files.dirout,fname_str,'.fig']);
 
+%%%% METHOD 2
+nden_k_cyl_collated=vertcat(nden_k_cyl_1D{:});   % collated k-density profile for all angles
+nden_k_cyl_avg=mean(nden_k_cyl_collated,1);     % angular averaged farfield k profile
+nden_k_cyl_std=std(nden_k_cyl_collated,1);      % standard deviation
+nden_k_cyl_se=nden_k_cyl_std/sqrt(size(nden_k_cyl_collated,1));	% standard error
+
+% Plot
+h_nk_cyl_avg=figure();
+mseb(1e-6*hist_k_cyl_1D.binCent,1e18*nden_k_cyl_avg,...
+    1e18*nden_k_cyl_std);  % NOTE: error in shaded error bar when error is larger than mean
+
+% plot background count distribution
+hold on;
+loglog(1e-6*hist_lgk1D_bgd.binCent,...
+        1e18*nden_bgdlgk1D,'*-');     % scale units appropriately
+
+set(gca,'xScale','log');    % loglog scale
+set(gca,'yScale','log');
+
+xlim auto;
+% xlim([1e-1,2e1]);   %   limit x-axis to like Clement paper
+grid on;
+title('Angular averaged - 1D k profile');
+xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
+
+fname_str='nk1D_cyl_avg';
+saveas(h_nk_cyl_avg,[configs.files.dirout,fname_str,'.png']);
+saveas(h_nk_cyl_avg,[configs.files.dirout,fname_str,'.fig']);
+
 
 %% Fit density profile
 %%% METHOD 1
@@ -463,7 +587,7 @@ saveas(h_nk_log_aa,[configs.files.dirout,fname_str,'.fig']);
 % I_qd is shared
 % [~,I_qd]=min(abs(hist_k_cyl_1D.binCent-configs.fit.k_min));  % get index from which to fit QD neg-power law
 k4cyl_fit.QD.k=hist_k_cyl_1D.binCent(I_qd:end);   % store data used for fitting
-k4cyl_fit.QD.nk=nden_k_cyl_1D(I_qd:end);
+k4cyl_fit.QD.nk=nden_k_cyl_avg(I_qd:end);
 
 k4cyl_fit.QD.fit=fitnlm(k4cyl_fit.QD.k,k4cyl_fit.QD.nk,...
     configs.fit.fun_negpowk,configs.fit.param0,...
@@ -479,13 +603,13 @@ k4cyl_fit.QD.k_fit=logspace(log10(min(k4cyl_fit.QD.k)/ratio_extrap),log10(ratio_
 k4cyl_fit.QD.nk_fit=feval(k4cyl_fit.QD.fit,k4cyl_fit.QD.k_fit);  % evaluate fitted model
 
 % Plot
-figure(h_nk_cyl_1D_log); hold on;
+figure(h_nk_cyl_avg); hold on;
 loglog(1e-6*k4cyl_fit.QD.k_fit,1e18*k4cyl_fit.QD.nk_fit,'k--');
 
 % Save plot
 fname_str='nk_cyl_fit';
-saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'.png']);
-saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'.fig']);
+saveas(h_nk_cyl_avg,[configs.files.dirout,fname_str,'.png']);
+saveas(h_nk_cyl_avg,[configs.files.dirout,fname_str,'.fig']);
 
 
 %% Save data
