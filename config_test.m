@@ -17,7 +17,7 @@ configs.rot_angle=0.61;     % angle in rad (exp default should be 0.61)
 % TXY window - region of interest ( [] --> no crop )
 %   XY window is applied after rotation
 %   window liberally for very long k-tail
-configs.window{1}=[0.54 0.595];      % T [s]
+configs.window{1}=[0.50 0.64];      % T [s]
 configs.window{2}=[-45e-3,40e-3];    % X [m]
 configs.window{3}=[-50e-3,38e-3];    % Y [m]
 
@@ -36,14 +36,14 @@ configs.const.tof=0.430;    % TOF for free-fall from trap to DLD
 
 %% Quantum depletion specific
 %%% Angular integration over radial profile - Cylindrical sector
-configs.cylsect_theta_lims=[-pi/4,pi/4];    % in-radial plane angle lims for angular averaging
-configs.cylsect_trans_hwidth=5e-3;          % transverse averaging half width [m]
+configs.cylsect_theta_lims=pi+[-pi/16,pi/16];    % in-radial plane angle lims for angular averaging
+configs.cylsect_trans_hwidth=1e-3;          % transverse averaging half width [m]
 
 %%% 1D slice
 % counts captured along a 1D line-slice from well "below" condensate to centre
 configs.slice.cyl_orient=1;     % slice through Z-axis (1:Z,2:X,3:Y)
 configs.slice.cyl_rad=1e-3;     % cyl radius [m]
-configs.slice.cyl_hgt=80e-3;    % cyl height [m]
+configs.slice.cyl_hgt=280e-3;    % cyl height [m]
 configs.slice.mincount=500;     % minimum count in 1D slice to pass
 
 % build cylinder dim
@@ -53,15 +53,29 @@ configs.slice.cyl_dim=[configs.slice.cyl_rad,configs.slice.cyl_hgt];
 configs.slice.cyl_cent=zeros(1,3);
 configs.slice.cyl_cent(configs.slice.cyl_orient)=-0.5*configs.slice.cyl_hgt;
 
+%%% Background density
+% configs.do_bgd_calc=1;
+
+configs.bgd_cyl_orient=1;       % cylinder oriented in +Z direction
+configs.bgd_disp=[0,0,0.03];    % T,X,Y disp to do background analysis
+configs.bgd_cyl_rad=5e-3;
+configs.bgd_cyl_hgt=200e-3;
+
+% build cylinder params
+configs.bgd_cyl_dim=[configs.bgd_cyl_rad,configs.bgd_cyl_hgt];
+configs.bgd_cyl_cent=configs.bgd_disp;
+configs.bgd_cyl_cent(configs.bgd_cyl_orient)=configs.bgd_cyl_cent(configs.bgd_cyl_orient)+0.5*configs.bgd_cyl_hgt;
+
+
 %%% Histogramming
 configs.hist.nbin=100;   % used for real space and linear-k distribution
 % TODO - (log-spaced) bin edges to use in k-space --> simplifies anisotropic
 % analysis
-configs.hist.ed_lgk=logspace(5,7,100);   % 10^X [m^-1 == 1e-6 um^-1]
+configs.hist.ed_lgk=logspace(5,8,300);   % 10^X [m^-1 == 1e-6 um^-1]
 
 %%% Angular averaging
 % Rotate around X-direction (radial plane is YZ)
-configs.axial_rot_angle=linspace(-pi/4,pi/4,9);     % angles to perform 1D analysis
+configs.axial_rot_angle=linspace(-pi/8+pi,pi/8+pi,5);     % angles to perform 1D analysis
 
 %%% Fit to large-k tail
 % fitting region
