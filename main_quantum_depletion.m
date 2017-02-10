@@ -206,7 +206,7 @@ for i=1:num_rot_angle     % rotate whole zxy to sample 1D slice with angular shi
         end
         figure(h_nr1D);
         plot(1e3*hist_r1D.binCent{i},...
-            1e-9*nden_r1D{i},'*-');    % scale units
+            1e-9*nden_r1D{i},'.-');    % scale units
         
         title('1D condensate number profile');
         xlabel('$r$ [mm]'); ylabel('$n(r,\overline{t})$ [mm$^{-3}$]');
@@ -222,7 +222,7 @@ for i=1:num_rot_angle     % rotate whole zxy to sample 1D slice with angular shi
         end
         figure(h_nk1D);
         plot(1e-6*r2k(hist_r1D.binCent{i}),...
-            1e18*nden_k1D{i},'*-');    % scale units
+            1e18*nden_k1D{i},'.-');    % scale units
         title('1D condensate momentum profile');
         xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
         
@@ -246,7 +246,7 @@ for i=1:num_rot_angle     % rotate whole zxy to sample 1D slice with angular shi
         end
         figure(h_nk1D_log);
         loglog(1e-6*hist_lgk1D.binCent,...
-            1e18*nden_lgk1D{i},'*-');     % scale units appropriately
+            1e18*nden_lgk1D{i},'.-');     % scale units appropriately
         
         xlim(1e6*configs.limit.k_com);
         ylim(1e18*configs.limit.kdensity);
@@ -272,10 +272,12 @@ for i=1:num_rot_angle     % rotate whole zxy to sample 1D slice with angular shi
             h_nk4=figure(); box on; hold on; 
         end
         figure(h_nk4);
-        semilogy(1e-6*hist_lgk1D.binCent,nk4{i},'*-');
+        semilogy(1e-6*hist_lgk1D.binCent,nk4{i},'.-');
+        
+        ylim([1e8,1e11]);       % y limits to like Clement PRL
+        set(gca,'yScale','log');
         
         grid on;
-        ylim([1e8,1e11]);       % y limits to like Clement PRL
         xlabel('$k$ [$\mu$m$^{-1}$]');
         ylabel('$k^{4}n_{\infty}(k)$ [m$^{-1}$]');
         
@@ -347,7 +349,7 @@ if verbose>0    % plot
     % far-field momentum space (log)
     figure(h_nk1D_log); hold on;
     loglog(1e-6*hist_lgk1D_bgd.binCent,...
-        1e18*nden_bgdlgk1D,'*-');     % scale units appropriately
+        1e18*nden_bgdlgk1D,'.-');     % scale units appropriately
     
     grid on;
     title('1D condensate momentum profile');
