@@ -2,7 +2,7 @@
 % mf=0 atoms
 
 %%% GENERAL
-verbose=2;
+verbose=1;
 
 %%% Raw data handling
 % files -  data file
@@ -36,8 +36,8 @@ configs.const.tof=0.430;    % TOF for free-fall from trap to DLD
 
 %% Quantum depletion specific
 %%% Angular integration over radial profile - Cylindrical sector
-configs.cylsect_theta_lims=pi+[-pi/16,pi/16];    % in-radial plane angle lims for angular averaging
-configs.cylsect_trans_hwidth=1e-3;          % transverse averaging half width [m]
+configs.cylsect_theta_lims=pi+[-pi/8,pi/8];    % in-radial plane angle lims for angular averaging
+configs.cylsect_trans_hwidth=5e-3;          % transverse averaging half width [m]
 
 %%% 1D slice
 % counts captured along a 1D line-slice from well "below" condensate to centre
@@ -55,31 +55,29 @@ configs.slice.cyl_cent(configs.slice.cyl_orient)=-0.5*configs.slice.cyl_hgt;
 
 %%% Background density
 % configs.do_bgd_calc=1;
-
 configs.bgd_cyl_orient=1;       % cylinder oriented in +Z direction
-configs.bgd_disp=[0,0,0.03];    % T,X,Y disp to do background analysis
-configs.bgd_cyl_rad=5e-3;
-configs.bgd_cyl_hgt=200e-3;
+configs.bgd_disp=[0,0.02,0.02];    % T,X,Y disp to do background analysis
+configs.bgd_cyl_rad=3e-3;
+configs.bgd_cyl_hgt=280e-3;
 
 % build cylinder params
 configs.bgd_cyl_dim=[configs.bgd_cyl_rad,configs.bgd_cyl_hgt];
 configs.bgd_cyl_cent=configs.bgd_disp;
 configs.bgd_cyl_cent(configs.bgd_cyl_orient)=configs.bgd_cyl_cent(configs.bgd_cyl_orient)+0.5*configs.bgd_cyl_hgt;
 
-
 %%% Histogramming
 configs.hist.nbin=100;   % used for real space and linear-k distribution
 % TODO - (log-spaced) bin edges to use in k-space --> simplifies anisotropic
 % analysis
-configs.hist.ed_lgk=logspace(5,8,300);   % 10^X [m^-1 == 1e-6 um^-1]
+configs.hist.ed_lgk=logspace(5,7,300);   % 10^X [m^-1 == 1e-6 um^-1]
 
 %%% Angular averaging
 % Rotate around X-direction (radial plane is YZ)
-configs.axial_rot_angle=linspace(-pi/8+pi,pi/8+pi,5);     % angles to perform 1D analysis
+configs.axial_rot_angle=pi+linspace(-pi/8,pi/8,11);     % angles to perform 1D analysis
 
 %%% Fit to large-k tail
 % fitting region
-configs.fit.k_min=3.5e6;      % lower bound k to use for fit [m^-1]
+configs.fit.k_min=3e6;      % lower bound k to use for fit [m^-1]
 % fitting function
 configs.fit.fun_negpowk='y~A*(x1^(-alpha))';    % negative-power function
 configs.fit.fun_coefname={'A','alpha'};         % function coefficient names
@@ -91,6 +89,18 @@ configs.fit.opt=statset('TolFun',1e-15,...
     'MaxIter',1e6,...
     'UseParallel',1,...
     'Display','off');
+
+
+%% Limits
+%%% Scale
+% size of cloud limited by detector resolution (0.1mm) and BEC (68mm=10um-1)
+configs.limit.r_com=1e-3*[0.1,68];      % [m]
+configs.limit.k_com=1e-6*[0.1,10];      % [m^-1]
+
+%%% Density 
+% evaluated from dark counts (~6.5e-3 um3) and saturation (~100 mm-^3)
+configs.limit.rdensity=1e9*[1e-5,1e3];      % [m^-3]
+configs.limit.kdensity=1e-18*[1e-3,1e5];      % [m^3]
 
 
 %% ALGORITHM CONFIGS
