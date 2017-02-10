@@ -82,7 +82,7 @@ if nShot_raw<nShotSumm
 end
 if verbose>1
     h_zxy_ff=figure();
-    plot_zxy(zxy_0(1:nShotSumm),20,'k');
+    plot_zxy(zxy_0(1:nShotSumm),20,'k');    
     title('Condensate point cloud (Summary)');
     xlabel('X [m]'); ylabel('Y [m]'); zlabel('Z [m]');
     view(3);
@@ -202,11 +202,12 @@ for i=1:num_rot_angle     % rotate whole zxy to sample 1D slice with angular shi
         % real-space density dist
         if i==1
             h_nr1D=figure();
-            hold on;
+            hold on; box on;
         end
         figure(h_nr1D);
         plot(1e3*hist_r1D.binCent{i},...
             1e-9*nden_r1D{i},'*-');    % scale units
+        
         title('1D condensate number profile');
         xlabel('$r$ [mm]'); ylabel('$n(r,\overline{t})$ [mm$^{-3}$]');
         
@@ -217,7 +218,7 @@ for i=1:num_rot_angle     % rotate whole zxy to sample 1D slice with angular shi
         % far-field momentum space
         if i==1
             h_nk1D=figure();
-            hold on;
+            hold on; box on;
         end
         figure(h_nk1D);
         plot(1e-6*r2k(hist_r1D.binCent{i}),...
@@ -241,14 +242,17 @@ for i=1:num_rot_angle     % rotate whole zxy to sample 1D slice with angular shi
     if verbose>0    % plot
         % far-field momentum space (log)
         if i==1
-            h_nk1D_log=figure();
+            h_nk1D_log=figure(); box on; hold on;
         end
         figure(h_nk1D_log);
         loglog(1e-6*hist_lgk1D.binCent,...
             1e18*nden_lgk1D{i},'*-');     % scale units appropriately
-        hold on;
         
-        xlim([1e-1,2e1]);   %   limit x-axis to like Clement paper
+        xlim(1e6*configs.limit.k_com);
+        ylim(1e18*configs.limit.kdensity);
+        set(gca,'xScale','log');
+        set(gca,'yScale','log');
+        
         grid on;
         title('1D condensate momentum profile');
         xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
@@ -265,11 +269,10 @@ for i=1:num_rot_angle     % rotate whole zxy to sample 1D slice with angular shi
     
     if verbose>0    % plot
         if i==1
-            h_nk4=figure();
+            h_nk4=figure(); box on; hold on; 
         end
         figure(h_nk4);
         semilogy(1e-6*hist_lgk1D.binCent,nk4{i},'*-');
-        hold on;
         
         grid on;
         ylim([1e8,1e11]);       % y limits to like Clement PRL
@@ -345,9 +348,7 @@ if verbose>0    % plot
     figure(h_nk1D_log); hold on;
     loglog(1e-6*hist_lgk1D_bgd.binCent,...
         1e18*nden_bgdlgk1D,'*-');     % scale units appropriately
-    hold on;
     
-    xlim([1e-1,2e1]);   %   limit x-axis to like Clement paper
     grid on;
     title('1D condensate momentum profile');
     xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
@@ -431,17 +432,18 @@ if verbose>0    % plot
     % far-field momentum space (log)
     h_nk_cyl_1D_log=figure();
     figure(h_nk_cyl_1D_log);
-    hold on;
+    hold on; box on;
     
     for i=1:nShot_raw
         plot(1e-6*hist_k_cyl_1D.binCent,...
             1e18*nden_k_cyl_1D{i},'.-');     % scale units appropriately
     end
     
+    xlim(1e6*configs.limit.k_com);
+    ylim(1e18*configs.limit.kdensity);
     set(gca,'xScale','log');
     set(gca,'yScale','log');
     
-    xlim([1e-1,2e1]);   %   limit x-axis to like Clement paper
     grid on;
     title('1D condensate momentum profile - cylindrical capture');
     xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
@@ -482,20 +484,20 @@ nden_lgk_std=std(nden_lgk_collated,1);      % standard deviation
 nden_lgk_se=nden_lgk_std/sqrt(size(nden_lgk_collated,1));	% standard error
 
 % Plot
-h_nk_log_aa=figure();
+h_nk_log_aa=figure(); 
+hold on; box on;
 mseb(1e-6*hist_lgk1D.binCent,1e18*nden_lgk_avg,...
     1e18*nden_lgk_std);  % NOTE: error in shaded error bar when error is larger than mean
 
 % plot background count distribution
-hold on;
 loglog(1e-6*hist_lgk1D_bgd.binCent,...
         1e18*n_bgd_smooth,'.-');     % scale units appropriately
 
+xlim(1e6*configs.limit.k_com);
+ylim(1e18*configs.limit.kdensity);
 set(gca,'xScale','log');    % loglog scale
 set(gca,'yScale','log');
 
-xlim auto;
-% xlim([1e-1,2e1]);   %   limit x-axis to like Clement paper
 grid on;
 title('Angular averaged - 1D k profile');
 xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
@@ -513,6 +515,7 @@ nk4_se=nk4_std/sqrt(size(nk4_collated,1));  % standard error
 
 % Plot
 h_nk4_aa=figure();
+hold on; box on;
 mseb(1e-6*hist_lgk1D.binCent,nk4_avg,...
     nk4_std);        % NOTE: error in shaded error bar when error is larger than mean
 
@@ -535,19 +538,19 @@ nden_k_cyl_se=nden_k_cyl_std/sqrt(size(nden_k_cyl_collated,1));	% standard error
 
 % Plot
 h_nk_cyl_avg=figure();
+hold on; box on;
 mseb(1e-6*hist_k_cyl_1D.binCent,1e18*nden_k_cyl_avg,...
     1e18*nden_k_cyl_std);  % NOTE: error in shaded error bar when error is larger than mean
 
 % plot smoothed background count distribution
-hold on;
 loglog(1e-6*hist_lgk1D_bgd.binCent,...
         1e18*n_bgd_smooth,'.-');     % scale units appropriately
-
+    
+xlim(1e6*configs.limit.k_com);
+ylim(1e18*configs.limit.kdensity);
 set(gca,'xScale','log');    % loglog scale
 set(gca,'yScale','log');
 
-xlim auto;
-% xlim([1e-1,2e1]);   %   limit x-axis to like Clement paper
 grid on;
 title('Angular averaged - 1D k profile');
 xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
