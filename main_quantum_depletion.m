@@ -338,6 +338,7 @@ nden_bgdk1D=(hbar*tof/m_He)^3*nden_bgdr1D;    % number density (real space) to f
 %%% Log
 hist_lgk1D_bgd.N=histcounts(bgd_k_1D,hist_lgk1D_bgd.binEdge);	% use original data but bins are log-spaced
 nden_bgdlgk1D=(hist_lgk1D_bgd.N)./(nShot_raw*detQE*bgd_k_perp_area*diff(hist_lgk1D_bgd.binEdge));  % normalised for: shot, QE, phase space volume
+n_bgd_smooth=smooth(nden_bgdlgk1D,ceil(length(hist_lgk1D_bgd.binCent)/10));
 
 if verbose>0    % plot
     % far-field momentum space (log)
@@ -355,6 +356,7 @@ if verbose>0    % plot
     saveas(h_nk1D_log,[configs.files.dirout,fname_str,'.png']);
     saveas(h_nk1D_log,[configs.files.dirout,fname_str,'.fig']);
 end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -487,7 +489,7 @@ mseb(1e-6*hist_lgk1D.binCent,1e18*nden_lgk_avg,...
 % plot background count distribution
 hold on;
 loglog(1e-6*hist_lgk1D_bgd.binCent,...
-        1e18*nden_bgdlgk1D,'*-');     % scale units appropriately
+        1e18*n_bgd_smooth,'.-');     % scale units appropriately
 
 set(gca,'xScale','log');    % loglog scale
 set(gca,'yScale','log');
@@ -536,10 +538,10 @@ h_nk_cyl_avg=figure();
 mseb(1e-6*hist_k_cyl_1D.binCent,1e18*nden_k_cyl_avg,...
     1e18*nden_k_cyl_std);  % NOTE: error in shaded error bar when error is larger than mean
 
-% plot background count distribution
+% plot smoothed background count distribution
 hold on;
 loglog(1e-6*hist_lgk1D_bgd.binCent,...
-        1e18*nden_bgdlgk1D,'*-');     % scale units appropriately
+        1e18*n_bgd_smooth,'.-');     % scale units appropriately
 
 set(gca,'xScale','log');    % loglog scale
 set(gca,'yScale','log');
