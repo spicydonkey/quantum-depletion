@@ -109,9 +109,17 @@ configs.limit.r_com=1e-3*[0.1,68];      % [m]
 configs.limit.k_com=1e-6*[0.1,10];      % [m^-1]
 
 %%% Density 
+% TODO set more accurately - currently rounded to power of 10
 % evaluated from dark counts (~6.5e-3 um3) and saturation (~100 mm-^3)
-configs.limit.rdensity=1e9*[1e-5,1e3];      % [m^-3]
-configs.limit.kdensity=1e-18*[1e-3,1e5];      % [m^3]
+configs.limit.det_dark_nr=1e9*1e-5;  	% dark ct density in r [m^-3]
+configs.limit.det_sat_nr=1e9*1e3;       % sat ct density in r
+
+configs.limit.det_dark_nk=1e-18*1e-3;   % dark ct density in k [m^3]
+configs.limit.det_sat_nk=1e-18*1e5;     % sat ct density in k
+
+% create limits for plotting
+configs.limit.rdensity=[configs.limit.det_dark_nr,configs.limit.det_sat_nk];
+configs.limit.kdensity=[configs.limit.det_dark_nk,configs.limit.det_sat_nk];
 
 
 %% ALGORITHM CONFIGS
