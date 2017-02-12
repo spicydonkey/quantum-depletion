@@ -31,7 +31,7 @@ configs.bec.box_fwidth=[15e-3,20e-3,40e-3];     % txy full-width for box capt (b
 configs.const.detect_qe=0.1;      % detector quantum efficiency
 configs.const.hbar=1.05457e-34;     % hbar [m^2kg/s]
 configs.const.m_He=6.646476e-27;    % mass of helium (kg)
-configs.const.tof=0.413;    % TOF for free-fall from trap to DLD
+configs.const.tof=0.416;    % TOF for free-fall from trap to DLD
 
 
 %% Quantum depletion specific
