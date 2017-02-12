@@ -291,75 +291,78 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % background k-density profile
-bgd_r_perp_area=pi*(configs.bgd_cyl_rad^2);       % real area of integrated dims
-bgd_k_perp_area=pi*(r2k(configs.bgd_cyl_rad)^2);  % k area int area
-
-hist_r1D_bgd.binN=configs.hist.nbin;
-
-hist_lgk1D_bgd.binEdge=configs.hist.ed_lgk;     % get log-spaced edges
-hist_lgk1D_bgd.binCent=sqrt(hist_lgk1D_bgd.binEdge(1:end-1).*hist_lgk1D_bgd.binEdge(2:end));   % GEOM avg bin centres
-
-bgd_zxy=cell(nShot_raw,1);
-for i=1:nShot_raw
-    bgd_zxy{i}=cylindercull(zxy_0{i},configs.bgd_cyl_cent,...
-        configs.bgd_cyl_dim,configs.bgd_cyl_orient);
-end
-bgd_r_1D=abs(vertcat(bgd_zxy{:}));
-bgd_r_1D=bgd_r_1D(:,configs.bgd_cyl_orient);	% 1D culled data in real-space
-bgd_k_1D=r2k(bgd_r_1D);     % r to k
-
-% Density profile
-%%% Linear
-[hist_r1D_bgd.N,hist_r1D_bgd.binEdge]=histcounts(bgd_r_1D,hist_r1D_bgd.binN);  % lin hist - autoscale bins to lim
-hist_r1D_bgd.binCent=0.5*(hist_r1D_bgd.binEdge(1:end-1)+hist_r1D_bgd.binEdge(2:end));   % arith avg to bin center
-
-nden_bgdr1D=(hist_r1D_bgd.N)./(nShot_raw*detQE*bgd_r_perp_area*diff(hist_r1D_bgd.binEdge));  % normalised for: shot, QE, phase space volume
-nden_bgdk1D=(hbar*tof/m_He)^3*nden_bgdr1D;    % number density (real space) to far-field momentum density
-
-% if verbose>0    % plot
-%     % real-space density dist
-%     figure(h_nr1D); hold on;
-%     plot(1e3*hist_r1D_bgd.binCent,...
-%         1e-9*nden_bgdr1D,'*-');    % scale units
-%     title('1D condensate number profile');
-%     xlabel('$r$ [mm]'); ylabel('$n(r,\overline{t})$ [mm$^{-3}$]');
-%     
-%     fname_str='nr1D_bgd';
-%     saveas(h_nr1D,[configs.files.dirout,fname_str,'.png']);
-%     saveas(h_nr1D,[configs.files.dirout,fname_str,'.fig']);
-%     
-%     % far-field momentum space
-%     figure(h_nk1D); hold on;
-%     plot(1e-6*r2k(hist_r1D_bgd.binCent),...
-%         1e18*nden_bgdk1D,'*-');    % scale units
-%     title('1D condensate momentum profile');
-%     xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
-%     
-%     fname_str='nk1D_bgd';
-%     saveas(h_nk1D,[configs.files.dirout,fname_str,'.png']);
-%     saveas(h_nk1D,[configs.files.dirout,fname_str,'.fig']);
-% end
-
-%%% Log
-hist_lgk1D_bgd.N=histcounts(bgd_k_1D,hist_lgk1D_bgd.binEdge);	% use original data but bins are log-spaced
-nden_bgdlgk1D=(hist_lgk1D_bgd.N)./(nShot_raw*detQE*bgd_k_perp_area*diff(hist_lgk1D_bgd.binEdge));  % normalised for: shot, QE, phase space volume
-n_bgd_smooth=smooth(nden_bgdlgk1D,ceil(length(hist_lgk1D_bgd.binCent)/10));
-
-if verbose>0    % plot
-    % far-field momentum space (log)
-    figure(h_nk1D_log); hold on;
-    loglog(1e-6*hist_lgk1D_bgd.binCent,...
-        1e18*nden_bgdlgk1D,'.-');     % scale units appropriately
+n_iter_bgd=length(configs.bgd_cyl_orient);
+for i=1:n_iter_bgd
+    bgd_r_perp_area{i}=pi*(configs.bgd_cyl_rad{i}^2);       % real area of integrated dims
+    bgd_k_perp_area{i}=pi*(r2k(configs.bgd_cyl_rad{i})^2);  % k area int area
     
-    grid on;
-    title('1D condensate momentum profile');
-    xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
+    hist_r1D_bgd{i}.binN=configs.hist.nbin;
     
-    fname_str='nk1D_loglog_bgd';
-    saveas(h_nk1D_log,[configs.files.dirout,fname_str,'.png']);
-    saveas(h_nk1D_log,[configs.files.dirout,fname_str,'.fig']);
+    hist_lgk1D_bgd{i}.binEdge=configs.hist.ed_lgk;     % get log-spaced edges
+    hist_lgk1D_bgd{i}.binCent=sqrt(hist_lgk1D_bgd{i}.binEdge(1:end-1).*hist_lgk1D_bgd{i}.binEdge(2:end));   % GEOM avg bin centres
+    
+    bgd_zxy{i}=cell(nShot_raw,1);
+    for j=1:nShot_raw
+        bgd_zxy{i}{j}=cylindercull(zxy_0{j},configs.bgd_cyl_cent{i},...
+            configs.bgd_cyl_dim{i},configs.bgd_cyl_orient{i});
+    end
+    bgd_r_1D{i}=abs(vertcat(bgd_zxy{i}{:}));
+    bgd_r_1D{i}=bgd_r_1D{i}(:,configs.bgd_cyl_orient{i});	% 1D culled data in real-space
+    bgd_k_1D{i}=r2k(bgd_r_1D{i});     % r to k
+    
+    
+    % Density profile
+    %%% Linear
+    [hist_r1D_bgd{i}.N,hist_r1D_bgd{i}.binEdge]=histcounts(bgd_r_1D{i},hist_r1D_bgd{i}.binN);  % lin hist - autoscale bins to lim
+    hist_r1D_bgd{i}.binCent=0.5*(hist_r1D_bgd{i}.binEdge(1:end-1)+hist_r1D_bgd{i}.binEdge(2:end));   % arith avg to bin center
+    
+    nden_bgdr1D{i}=(hist_r1D_bgd{i}.N)./(nShot_raw*detQE*bgd_r_perp_area{i}*diff(hist_r1D_bgd{i}.binEdge));  % normalised for: shot, QE, phase space volume
+    nden_bgdk1D{i}=(hbar*tof/m_He)^3*nden_bgdr1D{i};    % number density (real space) to far-field momentum density
+    
+    % if verbose>0    % plot
+    %     % real-space density dist
+    %     figure(h_nr1D); hold on;
+    %     plot(1e3*hist_r1D_bgd.binCent,...
+    %         1e-9*nden_bgdr1D,'*-');    % scale units
+    %     title('1D condensate number profile');
+    %     xlabel('$r$ [mm]'); ylabel('$n(r,\overline{t})$ [mm$^{-3}$]');
+    %
+    %     fname_str='nr1D_bgd';
+    %     saveas(h_nr1D,[configs.files.dirout,fname_str,'.png']);
+    %     saveas(h_nr1D,[configs.files.dirout,fname_str,'.fig']);
+    %
+    %     % far-field momentum space
+    %     figure(h_nk1D); hold on;
+    %     plot(1e-6*r2k(hist_r1D_bgd.binCent),...
+    %         1e18*nden_bgdk1D,'*-');    % scale units
+    %     title('1D condensate momentum profile');
+    %     xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
+    %
+    %     fname_str='nk1D_bgd';
+    %     saveas(h_nk1D,[configs.files.dirout,fname_str,'.png']);
+    %     saveas(h_nk1D,[configs.files.dirout,fname_str,'.fig']);
+    % end
+    
+    %%% Log
+    hist_lgk1D_bgd{i}.N=histcounts(bgd_k_1D{i},hist_lgk1D_bgd{i}.binEdge);	% use original data but bins are log-spaced
+    nden_bgdlgk1D{i}=(hist_lgk1D_bgd{i}.N)./(nShot_raw*detQE*bgd_k_perp_area{i}*diff(hist_lgk1D_bgd{i}.binEdge));  % normalised for: shot, QE, phase space volume
+    n_bgd_smooth{i}=smooth(nden_bgdlgk1D{i},ceil(length(hist_lgk1D_bgd{i}.binCent)/10));
+    
+    if verbose>0    % plot
+        % far-field momentum space (log)
+        figure(h_nk1D_log); hold on;
+        loglog(1e-6*hist_lgk1D_bgd{i}.binCent,...
+            1e18*nden_bgdlgk1D{i},'.-');     % scale units appropriately
+        
+        grid on;
+        title('1D condensate momentum profile');
+        xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
+        
+        fname_str='nk1D_loglog_bgd';
+        saveas(h_nk1D_log,[configs.files.dirout,fname_str,'.png']);
+        saveas(h_nk1D_log,[configs.files.dirout,fname_str,'.fig']);
+    end
 end
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -492,9 +495,11 @@ mseb(1e-6*hist_lgk1D.binCent,1e18*nden_lgk_avg,...
     1e18*nden_lgk_std);  % NOTE: error in shaded error bar when error is larger than mean
 
 % plot background count distribution
-loglog(1e-6*hist_lgk1D_bgd.binCent,...
-        1e18*n_bgd_smooth,'.-');     % scale units appropriately
-
+for i=1:n_iter_bgd
+    loglog(1e-6*hist_lgk1D_bgd{i}.binCent,...
+        1e18*n_bgd_smooth{i},'.-');     % scale units appropriately
+end
+    
 xlim(1e6*configs.limit.k_com);
 ylim(1e18*configs.limit.kdensity);
 set(gca,'xScale','log');    % loglog scale
@@ -545,8 +550,10 @@ mseb(1e-6*hist_k_cyl_1D.binCent,1e18*nden_k_cyl_avg,...
     1e18*nden_k_cyl_std);  % NOTE: error in shaded error bar when error is larger than mean
 
 % plot smoothed background count distribution
-loglog(1e-6*hist_lgk1D_bgd.binCent,...
-        1e18*n_bgd_smooth,'.-');     % scale units appropriately
+for i=1:n_iter_bgd
+    loglog(1e-6*hist_lgk1D_bgd{i}.binCent,...
+        1e18*n_bgd_smooth{i},'.-');     % scale units appropriately
+end
     
 xlim(1e6*configs.limit.k_com);
 ylim(1e18*configs.limit.kdensity);
