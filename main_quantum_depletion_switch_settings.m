@@ -621,7 +621,7 @@ end
 
 %% Fit density profile
 % common
-ratio_extrap=1.5;
+ratio_extrap=1;
 
 % %%% METHOD 1
 % % Negative power law fit to k-distribution at large k
@@ -660,7 +660,6 @@ k4cyl_fit.QD.k=hist_k_cyl_1D.binCent(I_qd:end);   % store data used for fitting
 % k4cyl_fit.QD.nk=nden_k_cyl_avg(I_qd:end);
 
 k4cyl_fit.QD.nk=nden_k_cyl_1D(I_qd:end);
-
 
 k4cyl_fit.QD.fit=fitnlm(k4cyl_fit.QD.k,k4cyl_fit.QD.nk,...
     configs.fit.fun_negpowk,configs.fit.param0,...

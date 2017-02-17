@@ -96,21 +96,38 @@ end
 configs.hist.nbin=100;   % used for real space and linear-k distribution
 % TODO - (log-spaced) bin edges to use in k-space --> simplifies anisotropic
 % analysis
-configs.hist.ed_lgk=logspace(5,7,1000);   % 10^X [m^-1 == 1e-6 um^-1]
+configs.hist.ed_lgk=logspace(5,7.3,1000);   % 10^X [m^-1 == 1e-6 um^-1]
 
 
 %% Fit to large-k tail
+%% TODO
+% %%% Thermal depletion
+% % fitting region
+% configs.fit.k_lim_thermal=[2.5e6 6e6];      % bound k to use for fit [m^-1]
+% % fitting function
+% configs.fit.fun_negpowk_thermal='y~(x1^())';    % negative-power function
+% configs.fit.fun_coefname_thermal={'A','alpha'};         % function coefficient names
+% % initial conditions
+% configs.fit.param0_thermal=[1e10,4];   % (A, alpha)
+% % fit options
+% configs.fit.opt_thermal=statset('TolFun',1e-15,...
+%     'TolX',1e-15,...
+%     'MaxIter',1e6,...
+%     'UseParallel',1,...
+%     'Display','off');
+
+%%% Quantum depletion
 % fitting region
-configs.fit.k_min=3e6;      % lower bound k to use for fit [m^-1]
+configs.fit.k_min=8e6;      % lower bound k to use for fit [m^-1]
 % fitting function
 configs.fit.fun_negpowk='y~A*(x1^(-alpha))';    % negative-power function
 configs.fit.fun_coefname={'A','alpha'};         % function coefficient names
 % initial conditions
-configs.fit.param0=[1e10,4];   % (A, alpha)
+configs.fit.param0=[1e10,4.0];   % (A, alpha)
 % fit options
-configs.fit.opt=statset('TolFun',1e-15,...
-    'TolX',1e-15,...
-    'MaxIter',1e6,...
+configs.fit.opt=statset('TolFun',1e-30,...
+    'TolX',1e-30,...
+    'MaxIter',1e8,...
     'UseParallel',1,...
     'Display','off');
 
