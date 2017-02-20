@@ -46,11 +46,16 @@ nShot_all=size(txy_raw,1);
 % table is row vectors of [file id, param set id]
 % TODO: make modular to accept datetime format, comment, etc
 % table_param_id=csvread(path_param_log);
-% TODO: fix this HACK - assumes 1,2 repeat
+% TODO: fix this HACK - assumes count number comparison to distinguish
 table_param_id=zeros(nShot_all,2);
-table_param_id(:,1)=1:nShot_all;
-table_param_id(:,2)=mod(table_param_id(:,1)-1,2)+1;
-
+table_param_id(:,1)=files_out.id_ok;
+for idx=1:nShot_all
+    if size(txy_raw{idx},1)>1000
+        table_param_id(idx,2)=1;
+    else
+        table_param_id(idx,2)=2;
+    end
+end
 
 %% Pre-processing
 txy_cat=cell(configs.paramset,1);     % TXY data categorised
@@ -255,6 +260,12 @@ end
 
 % subtract background
 nk_bgd_free=nden_k_cyl_1D{1}-nden_k_cyl_1D{2};
+nk_bgd_free(nk_bgd_free<=0)=NaN;    % handle negative density
+
+% clean data
+idx_isnum=~isnan(nk_bgd_free);
+nk_bgd_free_clean=nk_bgd_free(idx_isnum);
+k_clean=hist_k_cyl_1D.binCent{1}(idx_isnum);    % binCent needs to be common
 
 if verbose>0    % plot
     % far-field momentum space (log)
@@ -306,43 +317,48 @@ end
 % end
 
 
-%% Statistical summary
-% TODO - do for all other data
-% nden_k_cyl_collated=vertcat(nden_k_cyl_1D{:});   % collated k-density profile for all angles
-% nden_k_cyl_avg=mean(nden_k_cyl_collated,1);     % angular averaged farfield k profile
-% nden_k_cyl_std=std(nden_k_cyl_collated,1);      % standard deviation
-% nden_k_cyl_se=nden_k_cyl_std/sqrt(size(nden_k_cyl_collated,1));	% standard error
-% 
-% % Plot
-% h_nk_cyl_avg=figure();
-% hold on; box on;
-% mseb(1e-6*hist_k_cyl_1D.binCent,1e18*nden_k_cyl_avg,...
-%     1e18*nden_k_cyl_std);  % NOTE: error in shaded error bar when error is larger than mean
-% 
-% % % plot smoothed background count distribution
-% % for i=1:n_iter_bgd
-% %     loglog(1e-6*hist_lgk1D_bgd{i}.binCent,...
-% %         1e18*n_bgd_smooth{i},'.-');     % scale units appropriately
-% % end
-%     
-% xlim(1e6*configs.limit.k_com);
-% ylim(1e18*configs.limit.kdensity);
-% set(gca,'xScale','log');    % loglog scale
-% set(gca,'yScale','log');
-% 
-% grid on;
-% title('Angular averaged - 1D k profile');
-% xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
-% 
-% fname_str='nk1D_cyl_avg';
-% saveas(h_nk_cyl_avg,[configs.files.dirout,fname_str,'.png']);
-% saveas(h_nk_cyl_avg,[configs.files.dirout,fname_str,'.fig']);
+%% Smooth profile
+nk_sm_avg=smooth(nk_bgd_free_clean,configs.smooth.nspan,'moving');  % simple moving average filter
+
+% Gaussian smoothing
+g_filt=gausswin(configs.smooth.nspan);
+g_filt=g_filt/sum(g_filt);
+nk_sm_gauss=conv(nk_bgd_free_clean,g_filt,'same');
+
+nk_sm_std=movingstd(nk_bgd_free_clean,configs.smooth.nspan,'central');   % moving std
+
+% smoothing in logspace
+
+
+% plot smoothed data
+if verbose>0    % plot
+    h_nk_sm=figure();
+    figure(h_nk_sm);
+    hold on; box on;
+    
+    shadedErrorBar(1e-6*k_clean,1e18*nk_sm_avg,1e18*nk_sm_std,'k');
+    
+    shadedErrorBar(1e-6*k_clean,1e18*nk_sm_gauss,1e18*nk_sm_std,'b');
+    
+    set(gca,'xScale','log');
+    set(gca,'yScale','log');
+    axis auto;
+    grid on;
+    
+    title('smoothed momentum density profile');
+    xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
+    
+    fname_str='nk_smoothed';
+    saveas(h_nk_sm,[configs.files.dirout,fname_str,'.png']);
+    saveas(h_nk_sm,[configs.files.dirout,fname_str,'.fig']);
+end
 
 
 %% Fit density profile
 % common
 ratio_extrap=1;
 
+% fit to raw data
 [~,I_qd]=min(abs(hist_k_cyl_1D.binCent{idxparam}-configs.fit.k_min));  % get index from which to fit QD neg-power law
 
 % get fitting data
@@ -366,6 +382,9 @@ k4cyl_fit.QD.nk_log_fit=feval(k4cyl_fit.QD.fit,k4cyl_fit.QD.k_log_fit);  % evalu
 % Plot
 figure(h_nk_cyl_1D_log); hold on;
 plot(1e-6*exp(k4cyl_fit.QD.k_log_fit),1e18*exp(k4cyl_fit.QD.nk_log_fit),'k--');
+
+% auto axis
+axis auto;
 
 % Save plot
 fname_str='nk_cyl_fit';

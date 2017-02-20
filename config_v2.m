@@ -12,8 +12,8 @@ verbose=2;
 %%% Raw data handling
 % files -  data file
 configs.files.path='C:\Users\HE BEC\Documents\lab\quantum-depletion\exp5\d';    % path to unindexed data file (e.g. 'a\b\datadir\$DATA_FNAME_TOKEN$')
-configs.files.id=1:500;          % file id numbers to use for analysis
-configs.files.minCount=100;     % min counts to use for analysis
+configs.files.id=1:7000;          % file id numbers to use for analysis
+configs.files.minCount=0;     % min counts to use for analysis
 
 
 % XY plane rotation to align to trap geometry
@@ -26,15 +26,12 @@ configs.window{1}=[0.50 0.64];      % T [s]
 configs.window{2}=[-45e-3,40e-3];    % X [m]
 configs.window{3}=[-50e-3,38e-3];    % Y [m]
 
-
 % Param set
 configs.paramset=2;     % TODO: number of params iterated
-
 
 % BEC locator - used for accurate location of condensate
 configs.bec.txy_pos=[0.5715,-3.45e-3,-10e-3];       % approx bec location (get from DLD front panel)
 configs.bec.box_fwidth=[15e-3,20e-3,40e-3];     % txy full-width for box capt (be liberal-takes mean)
-
 
 %%% Experimental consts 
 configs.const.detect_qe=0.1;      % detector quantum efficiency
@@ -45,61 +42,20 @@ configs.const.tof=0.416;    % TOF for free-fall from trap to DLD
 
 %% Quantum depletion specific
 %%% Angular integration over radial profile - Cylindrical sector
-configs.cylsect_theta_lims=pi+[-pi/8,pi/8];    % in-radial plane angle lims for angular averaging
-configs.cylsect_trans_hwidth=4e-3;          % transverse averaging half width [m]
-
-%% 1D slice
-% % TODO - document usage properly
-% % counts captured along a 1D line-slice from well "below" condensate to centre
-% configs.slice.mincount=500;     % minimum count in 1D slice to pass
-% configs.slice.cyl_orient=1;     % slice through Z-axis (1:Z,2:X,3:Y)
-% configs.slice.cyl_rad=1e-3;     % cyl radius [m]
-% configs.slice.cyl_hgt=280e-3;    % cyl height [m]
-% 
-% % build cylinder dim
-% configs.slice.cyl_dim=[configs.slice.cyl_rad,configs.slice.cyl_hgt];
-% 
-% % build cylinder centre such that slice ends at condensate centre
-% configs.slice.cyl_cent=zeros(1,3);
-% configs.slice.cyl_cent(configs.slice.cyl_orient)=-0.5*configs.slice.cyl_hgt;
-
-%%% Angular averaging
-% Rotate around X-direction (radial plane is YZ)
-% TODO - feature isn't implemented - just uses {1}
-configs.axial_rot_angle{1}=linspace(-pi/8,pi/8,20);     % point -Z
-configs.axial_rot_angle{2}=pi+linspace(-pi/8,pi/8,20);  % point +Z
-
-
-% %% Background density
-% % configs.do_bgd_calc=1;
-% % +Z direction
-% configs.bgd_cyl_dir{1}=1;
-% configs.bgd_cyl_orient{1}=1;       
-% configs.bgd_disp{1}=[0,0.027,0.027];    % T,X,Y disp to do background analysis
-% configs.bgd_cyl_rad{1}=5e-3;
-% configs.bgd_cyl_hgt{1}=k2r(20*1e6);     % cylinder oriented in +Z direction
-% 
-% % -Z direction
-% configs.bgd_cyl_dir{2}=-1;     % cylinder oriented in -Z direction
-% configs.bgd_cyl_orient{2}=1;       % cylinder oriented in -Z direction
-% configs.bgd_disp{2}=[0,0.027,0.027];    % T,X,Y disp to do background analysis
-% configs.bgd_cyl_rad{2}=5e-3;
-% configs.bgd_cyl_hgt{2}=k2r(20*1e6);    
-% 
-% % build cylinder params
-% for i=1:length(configs.bgd_cyl_orient)
-%     configs.bgd_cyl_dim{i}=[configs.bgd_cyl_rad{i},configs.bgd_cyl_hgt{i}];
-%     configs.bgd_cyl_cent{i}=configs.bgd_disp{i};
-%     configs.bgd_cyl_cent{i}(configs.bgd_cyl_orient{i})=configs.bgd_cyl_cent{i}(configs.bgd_cyl_orient{i})+0.5*configs.bgd_cyl_dir{i}*configs.bgd_cyl_hgt{i};
-% end
+configs.cylsect_dtheta=deg2rad(15);
+configs.cylsect_theta_lims=pi+configs.cylsect_dtheta*[-0.5,0.5];    % in-radial plane angle lims for angular averaging
+configs.cylsect_trans_hwidth=k2r(0.8e6);          % transverse averaging half width [m]
 
 
 %% Histogramming
 configs.hist.nbin=100;   % used for real space and linear-k distribution
 % TODO - (log-spaced) bin edges to use in k-space --> simplifies anisotropic
 % analysis
-configs.hist.ed_lgk=logspace(5,7.3,1000);   % 10^X [m^-1 == 1e-6 um^-1]
+configs.hist.ed_lgk=logspace(log10(0.3e6),log10(20e6),1000);   % 10^X [m^-1 == 1e-6 um^-1]
 
+
+%% Smoothing
+configs.smooth.nspan=11;
 
 %% Fit to large-k tail
 %% TODO
@@ -135,7 +91,7 @@ configs.hist.ed_lgk=logspace(5,7.3,1000);   % 10^X [m^-1 == 1e-6 um^-1]
 
 %%% Quantum depletion - loglog transformed linear
 % fitting region
-configs.fit.k_min=5e6;      % lower bound k to use for fit [m^-1]
+configs.fit.k_min=6.5e6;      % lower bound k to use for fit [m^-1]
 % fitting function
 configs.fit.fun_negpowk='y~A-alpha*x1';     % linearised fitting function
 configs.fit.fun_coefname={'A','alpha'};    	% function coefficient names
