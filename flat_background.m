@@ -6,8 +6,8 @@ LIM{1}=[-0.075,0.075];   % T[s]
 LIM{2}=[-40e-3,40e-3];   % X[m]
 LIM{3}=[-40e-3,40e-3];   % Y[m]
 
-N_PER_SHOT=1e2;
-N_SHOT=1e3;
+N_PER_SHOT=10;
+N_SHOT=3000;
 
 TXY_FLAT=cell(N_SHOT,1);
 
@@ -19,3 +19,4 @@ for iShot=1:N_SHOT
         TXY_FLAT{iShot}(:,idx)=TXY_FLAT{iShot}(:,idx)*diff(LIM{idx})+LIM{idx}(1);
     end
 end
+
