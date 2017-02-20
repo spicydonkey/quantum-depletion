@@ -198,7 +198,7 @@ for idxparam=1:configs.paramset
     for i=1:nShot_this
         R0_cyl{idxparam}{i}=zeros(size(zxy_0{idxparam}{i}));
         R0_cyl{idxparam}{i}(:,1)=sqrt(sum(zxy_0{idxparam}{i}(:,[1,3]).^2,2));   % get in-plane radius [m]
-        R0_cyl{idxparam}{i}(:,2)=atan2(zxy_0{idxparam}{i}(:,1),zxy_0{idxparam}{i}(:,3))+pi/2;     % theta origin is pointing "down" in Z [-pi,pi]
+        R0_cyl{idxparam}{i}(:,2)=wrapToPi(atan2(zxy_0{idxparam}{i}(:,1),zxy_0{idxparam}{i}(:,3))+pi/2);     % theta origin is pointing "down" in Z [-pi,pi]
         R0_cyl{idxparam}{i}(:,3)=zxy_0{idxparam}{i}(:,2);       % transverse direction is in X [m]
     end
     
