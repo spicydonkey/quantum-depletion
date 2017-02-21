@@ -6,8 +6,12 @@ LIM{1}=[-0.075,0.075];   % T[s]
 LIM{2}=[-40e-3,40e-3];   % X[m]
 LIM{3}=[-40e-3,40e-3];   % Y[m]
 
-N_PER_SHOT=10;
-N_SHOT=3000;
+if ~exist('N_PER_SHOT','var')
+    N_PER_SHOT=10;
+end
+if ~exist('N_SHOT','var')
+    N_SHOT=3000;
+end
 
 TXY_FLAT=cell(N_SHOT,1);
 

@@ -1,7 +1,6 @@
 %%%% Tests k-distribution algorithm against 3D flat background counts
 vz=0.416*9.8;   % vz at tof of detection
 
-
 run('flat_background.m');   % builds TXY_FLAT - a noisy experimental data simulator
 
 %% T to Z
@@ -116,3 +115,10 @@ subplot(1,2,2);
 plot(r_log_cent,nden_log,'*');
 set(gca,'xScale','log');
 set(gca,'yScale','log');
+hold on;
+h_flatdensity=refline([0,nden_flat]);   % add a reference line at calculted flat background density
+h_flatdensity.Color='r';
+drawnow;
+titlestr=sprintf('N_PER_SHOT=%d, N_SHOT=%d',N_PER_SHOT,N_SHOT);
+title(titlestr);
+saveas(h_r_profile,[num2str(iter),'.png']);
