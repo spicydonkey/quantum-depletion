@@ -5,7 +5,7 @@ clear all; close all; clc;
 
 %%% USER INPUTS
 path_config='C:\Users\HE BEC\Documents\MATLAB\quantum-depletion\config_v2.m';
-path_param_log='C:\Users\HE BEC\Documents\lab\quantum-depletion\exp4\log_test.txt';
+% path_param_log='C:\Users\HE BEC\Documents\lab\quantum-depletion\exp5\log_test.txt';
 
 % vars to save to output
 vars_save={'path_config',...
@@ -277,8 +277,9 @@ if verbose>0    % plot
         plot(1e-6*hist_k_cyl_1D.binCent{idxparam},...
             1e18*nden_k_cyl_1D{idxparam},'.-');     % scale units appropriately
         
-        xlim(1e6*configs.limit.k_com);
-        ylim(1e18*configs.limit.kdensity);
+%         xlim(1e6*configs.limit.k_com);
+%         ylim(1e18*configs.limit.kdensity);
+        axis tight
         set(gca,'xScale','log');
         set(gca,'yScale','log');
         
@@ -290,6 +291,10 @@ if verbose>0    % plot
     % plot background subtracted density profile
     plot(1e-6*hist_k_cyl_1D.binCent{idxparam},...
             1e18*nk_bgd_free,'-');     % scale units appropriately
+    
+    % plot dark count noise floor (note: must be plotted after setting axis to log scale)
+    h_darkcount=refline([0,1e18*configs.limit.det_dark_nk]);
+    h_darkcount.Color='r';
     
     fname_str='nk_cyl_1D_loglog';
     saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'.png']);
@@ -342,7 +347,7 @@ if verbose>0    % plot
     
     set(gca,'xScale','log');
     set(gca,'yScale','log');
-    axis auto;
+    axis tight;
     grid on;
     
     title('smoothed momentum density profile');
@@ -383,8 +388,8 @@ k4cyl_fit.QD.nk_log_fit=feval(k4cyl_fit.QD.fit,k4cyl_fit.QD.k_log_fit);  % evalu
 figure(h_nk_cyl_1D_log); hold on;
 plot(1e-6*exp(k4cyl_fit.QD.k_log_fit),1e18*exp(k4cyl_fit.QD.nk_log_fit),'k--');
 
-% auto axis
-axis auto;
+% tight axis
+axis tight;
 
 % Save plot
 fname_str='nk_cyl_fit';

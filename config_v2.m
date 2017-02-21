@@ -7,12 +7,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%% GENERAL
-verbose=2;
+verbose=1;
 
 %%% Raw data handling
 % files -  data file
 configs.files.path='C:\Users\HE BEC\Documents\lab\quantum-depletion\exp5\d';    % path to unindexed data file (e.g. 'a\b\datadir\$DATA_FNAME_TOKEN$')
-configs.files.id=1:7000;          % file id numbers to use for analysis
+configs.files.id=1:1000;          % file id numbers to use for analysis
 configs.files.minCount=0;     % min counts to use for analysis
 
 
@@ -117,7 +117,7 @@ configs.limit.k_com=1e-6*[0.1,10];      % [m^-1]
 configs.limit.det_dark_nr=1e9*1e-5;  	% dark ct density in r [m^-3]
 configs.limit.det_sat_nr=1e9*1e3;       % sat ct density in r
 
-configs.limit.det_dark_nk=1e-18*1e-3;   % dark ct density in k [m^3]
+configs.limit.det_dark_nk=6.5e-3*1e-18;   % dark ct density in k [m^3]
 configs.limit.det_sat_nk=1e-18*1e5;     % sat ct density in k
 
 % create limits for plotting
