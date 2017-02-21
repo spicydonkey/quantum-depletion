@@ -5,7 +5,9 @@ clear all; close all; clc;
 
 %%% USER INPUTS
 path_config='C:\Users\HE BEC\Documents\MATLAB\quantum-depletion\config_v2.m';
-% path_param_log='C:\Users\HE BEC\Documents\lab\quantum-depletion\exp5\log_test.txt';
+
+% note: getting param id from logfile is not implemented yet
+% path_param_log='C:\Users\HE BEC\Documents\lab\quantum-depletion\exp5\log_test.txt';   
 
 % vars to save to output
 vars_save={'path_config',...
@@ -64,35 +66,8 @@ settings_idx=cell(configs.paramset,1);
 % categorise TXY files
 for idx=1:configs.paramset
     settings_idx{idx}=find(table_param_id(:,2)==idx);
-%     txy_0{idx}=cell(sum(table_param_id(:,2)==idx),1);
-%     txy_0{idx}=cell(numel(settings_idx{idx}),1);
     txy_cat{idx}=txy_raw(settings_idx{idx});  % populate this param set
 end
-
-% %% Categorize Raw TXY data
-% txy_raw_cat=cell(configs.paramset,1);
-% % TODO: make general
-% counter1=1;
-% counter2=1;
-% for i=1:size(txy_raw,1)
-%     if mod(files_out.id_ok(i),2)==1
-%         % Cat 1
-%         txy_raw_cat{1}{counter1,1}=txy_raw{i};
-%         counter1=counter1+1;
-%     else
-%         % Cat 2
-%         txy_raw_cat{2}{counter2,1}=txy_raw{i};
-%         counter2=counter2+1;
-%     end
-% end
-
-% %% TODO: QUICK HACK FOR NOW
-% % update all new data into old var settings
-% txy_raw=txy_raw_cat{1};     % do same analysis but use only the param set #1
-% 
-% % re-evaluate
-% nShot_all=size(txy_raw,1);
-
 
 %%% Prepare complete set of oscillation cancelled ZXY data
 % convert TXY to ZXY centred around condensate (oscillation compensation)
@@ -120,9 +95,10 @@ num_txy_raw=zeros(1,nShot_temp); % number of counts in loaded shot
 
 % build complete oscil cancelled data in the region of interest
 for i=1:nShot_temp
-%     txy_cent(i,:)=mean(txy_raw{i},1);       % approx condensate centre from average of captured
     % get mean position of counts captured in user specified box for
     % locating BEC
+    % TODO: strongly saturated BEC will be blobby and averaging will be
+    % biased
     [~,~,~,bec_cent(i,:)]=boxcull(txy_temp{i},bec_boxlim);
     
     num_txy_raw(i)=size(txy_temp{i},1);      % number of counts in this shot
@@ -134,9 +110,9 @@ for i=1:nShot_temp
 end
 
 % get mean absolute position of BEC
-% TODO - maybe cull bad shots
-avg_bec_cent=nanmean(bec_cent,1);
-std_bec_cent=nanstd(bec_cent,1);
+% TODO - how can there may be bad shots that produce NaN as bec_cent?
+avg_bec_cent=mean(bec_cent,1);
+std_bec_cent=std(bec_cent,1);
 
 
 %% Param set #2
@@ -156,11 +132,12 @@ end
 
 
 %% Plot far-field ZXY (summary)
-nShotSumm=50;   % number of shots to plot as summary
-if min(size(zxy_0{1},1),size(zxy_0{2},1))<nShotSumm
-    nShotSumm=min(size(zxy_0{1},1),size(zxy_0{2},1));
-end
 if verbose>1
+    nShotSumm=50;   % number of shots to plot as summary
+    if min(size(zxy_0{1},1),size(zxy_0{2},1))<nShotSumm
+        nShotSumm=min(size(zxy_0{1},1),size(zxy_0{2},1));
+    end
+    
     h_zxy_ff=figure();
     
     subplot(1,2,1);
@@ -187,19 +164,36 @@ end
 %% Cylindrical sector for angular averaging
 % get cylindrical sector params
 cyl_dtheta=diff(configs.cylsect_theta_lims);
-cyl_dktrans=2*r2k(configs.cylsect_trans_hwidth);
+cyl_dtrans=2*r2k(configs.cylsect_trans_hwidth);
 
+R0_cyl=cell(configs.paramset,1);    % init cell array
+k_cyl=cell(configs.paramset,1);
+k_cyl_sect=cell(configs.paramset,1);
+k_1D_cyl=cell(configs.paramset,1);
 for idxparam=1:configs.paramset
-    
+    %% Cart-Cyl(axix=X) coord transform
     % convert BEC centered real-space counts to cylindrically symmetric coord system
     % FORMAT: R_CYL = (rad_plane,theta,dist_transverse)
     R0_cyl{idxparam}=cell(size(zxy_0{idxparam}));
     nShot_this=size(zxy_0{idxparam},1);
     for i=1:nShot_this
-        R0_cyl{idxparam}{i}=zeros(size(zxy_0{idxparam}{i}));
-        R0_cyl{idxparam}{i}(:,1)=sqrt(sum(zxy_0{idxparam}{i}(:,[1,3]).^2,2));   % get in-plane radius [m]
-        R0_cyl{idxparam}{i}(:,2)=wrapToPi(atan2(zxy_0{idxparam}{i}(:,1),zxy_0{idxparam}{i}(:,3))+pi/2);     % theta origin is pointing "down" in Z [-pi,pi]
-        R0_cyl{idxparam}{i}(:,3)=zxy_0{idxparam}{i}(:,2);       % transverse direction is in X [m]
+        % get cartesian coords for this shot
+        Z=zxy_0{idxparam}{i}(:,1);
+        X=zxy_0{idxparam}{i}(:,2);
+        Y=zxy_0{idxparam}{i}(:,3);
+        
+        % evaluate cylindrical coords
+        R_yz=sqrt(Z.^2+Y.^2);
+        H_perp=X;
+        Theta=wrapToPi(atan2(Z,Y)+pi/2);  % define -Z to be 0 and measure by RH +X. range=[-pi,pi]
+        
+        % store cyl coords
+        R0_cyl{idxparam}{i}=[R_yz,Theta,H_perp];
+        
+%         R0_cyl{idxparam}{i}=zeros(size(zxy_0{idxparam}{i}));
+%         R0_cyl{idxparam}{i}(:,1)=sqrt(sum(zxy_0{idxparam}{i}(:,[1,3]).^2,2));   % get in-plane radius [m]
+%         R0_cyl{idxparam}{i}(:,2)=wrapToPi(atan2(zxy_0{idxparam}{i}(:,1),zxy_0{idxparam}{i}(:,3))+pi/2);     % theta origin is pointing "down" in Z [-pi,pi]
+%         R0_cyl{idxparam}{i}(:,3)=zxy_0{idxparam}{i}(:,2);       % transverse direction is in X [m]
     end
     
     % convert cylindrical R to k-space
@@ -209,7 +203,7 @@ for idxparam=1:configs.paramset
         k_cyl{idxparam}{i}(:,3)=r2k(k_cyl{idxparam}{i}(:,3));
     end
     
-    % crop to region of interest for binning k
+    %% crop to region of interest for binning k (cylindrical section)
     k_cyl_sect{idxparam}=cell(size(k_cyl{idxparam}));
     for i=1:nShot_this
         k_cyl_sect{idxparam}{i}=k_cyl{idxparam}{i};  % get everything
@@ -229,68 +223,90 @@ for idxparam=1:configs.paramset
     end
     
     % Get 1D-k
-    k_1D_cyl{idxparam}=cell(nShot_this,1);    % get shot-wise cell array of k
-    for i=1:nShot_this
-        k_1D_cyl{idxparam}{i}=k_cyl_sect{idxparam}{i}(:,1);
-    end
-    % k_1D_cyl=vertcat(k_cyl_sect{:});
-    % k_1D_cyl=k_1D_cyl(:,1);
-    
-    %COLLATE!
-    k_1D_cyl{idxparam}=vertcat(k_1D_cyl{idxparam}{:});
+    k_1D_cyl{idxparam}=vertcat(k_cyl_sect{idxparam}{:});
+    k_1D_cyl{idxparam}=k_1D_cyl{idxparam}(:,1);     % collate all shots
     
     %%% Histogram
     % get hist params
     hist_k_cyl_1D.binEdge{idxparam}=configs.hist.ed_lgk;     % get log-spaced edges
     hist_k_cyl_1D.binCent{idxparam}=sqrt(hist_k_cyl_1D.binEdge{idxparam}(1:end-1).*hist_k_cyl_1D.binEdge{idxparam}(2:end));   % GEOM avg bin centres
     
-    dk_cyl_volume{idxparam}=cyl_dktrans*cyl_dtheta*(hist_k_cyl_1D.binCent{idxparam}).*diff(hist_k_cyl_1D.binEdge{idxparam});     % phase space volume in k
+    dk_cyl_volume{idxparam}=cyl_dtrans*cyl_dtheta*(hist_k_cyl_1D.binCent{idxparam}).*diff(hist_k_cyl_1D.binEdge{idxparam});     % phase space volume in k
     
-    % hist_k_cyl_1D.N=cell(nShot_raw,1);
-    % nden_k_cyl_1D=cell(nShot_raw,1);
-    % for i=1:nShot_raw
-    %     hist_k_cyl_1D.N{i}=histcounts(k_1D_cyl{i},hist_k_cyl_1D.binEdge);   % single-shot
-    %     nden_k_cyl_1D{i}=(hist_k_cyl_1D.N{i})./(detQE*dk_cyl_volume);  % normalised for: QE, phase space volume
-    % end
-    hist_k_cyl_1D.N{idxparam}=histcounts(k_1D_cyl{idxparam},hist_k_cyl_1D.binEdge{idxparam});     % collated
+    % do log-k-spaced histogram
+    hist_k_cyl_1D.N{idxparam}=histcounts(k_1D_cyl{idxparam},hist_k_cyl_1D.binEdge{idxparam});
     
     % evaluate number density
     nden_k_cyl_1D{idxparam}=(hist_k_cyl_1D.N{idxparam})./(nShot_this*detQE*dk_cyl_volume{idxparam});  % normalised for: shot, QE, phase space volume
 end
 
-% subtract background
-nk_bgd_free=nden_k_cyl_1D{1}-nden_k_cyl_1D{2};
-nk_bgd_free(nk_bgd_free<=0)=NaN;    % handle negative density
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Quantisation noise in histogram and number density must be resolved
 
-% clean data
-idx_isnum=~isnan(nk_bgd_free);
-nk_bgd_free_clean=nk_bgd_free(idx_isnum);
-k_clean=hist_k_cyl_1D.binCent{1}(idx_isnum);    % binCent needs to be common
+% % subtract background
+% nk_bgd_free=nden_k_cyl_1D{1}-nden_k_cyl_1D{2};
+% nk_bgd_free(nk_bgd_free<=0)=NaN;    % handle negative density
 
-if verbose>0    % plot
-    % far-field momentum space (log)
+% % clean data
+% idx_isnum=~isnan(nk_bgd_free);
+% nk_bgd_free_clean=nk_bgd_free(idx_isnum);
+% k_clean=hist_k_cyl_1D.binCent{1}(idx_isnum);    % binCent needs to be common
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Display Histogram
+if verbose>0
+    h_k1D_hist=figure();
+    figure(h_k1D_hist);
+    hold on;
+    
+    for paridx=1:configs.paramset
+        plot(1e-6*hist_k_cyl_1D.binCent{paridx},hist_k_cyl_1D.N{paridx},'.','MarkerSize',10); % Signal
+    end
+    
+    set(gca,'xScale','log');
+    set(gca,'yScale','log');
+    axis tight;
+    box on;
+    grid on;
+    
+    title('Histogram');
+    xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('Number in BIN$(k)$');
+    legend({'RF sweep ON','RF sweep OFF'}); % TODO - modular for param set variability
+    
+    fname_str='hist_k1D';
+    saveas(h_k1D_hist,[configs.files.dirout,fname_str,'.png']);
+    saveas(h_k1D_hist,[configs.files.dirout,fname_str,'.fig']);
+end
+
+%% Display far-field k-space density profile
+if verbose>0
     h_nk_cyl_1D_log=figure();
     figure(h_nk_cyl_1D_log);
-    hold on; box on;
+    hold on;
     
     for idxparam=1:configs.paramset
         plot(1e-6*hist_k_cyl_1D.binCent{idxparam},...
-            1e18*nden_k_cyl_1D{idxparam},'.-');     % scale units appropriately
-        
-%         xlim(1e6*configs.limit.k_com);
-%         ylim(1e18*configs.limit.kdensity);
-        axis tight
-        set(gca,'xScale','log');
-        set(gca,'yScale','log');
-        
-        grid on;
-        title('1D condensate momentum profile - cylindrical capture');
-        xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
+            1e18*nden_k_cyl_1D{idxparam},'.','MarkerSize',10);     % scale units appropriately
     end
     
-    % plot background subtracted density profile
-    plot(1e-6*hist_k_cyl_1D.binCent{idxparam},...
-            1e18*nk_bgd_free,'-');     % scale units appropriately
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Quantisation noise in histogram and number density must be resolved
+%
+%     % plot background subtracted density profile
+%     plot(1e-6*hist_k_cyl_1D.binCent{idxparam},...
+%         1e18*nk_bgd_free,'-');     % scale units appropriately
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    set(gca,'xScale','log');
+    set(gca,'yScale','log');
+    %         xlim(1e6*configs.limit.k_com);
+    %         ylim(1e18*configs.limit.kdensity);
+    axis tight;
+    grid on;
+    box on;
+    
+    title('1D condensate momentum profile');
+    xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
     
     % plot dark count noise floor (note: must be plotted after setting axis to log scale)
     h_darkcount=refline([0,1e18*configs.limit.det_dark_nk]);
