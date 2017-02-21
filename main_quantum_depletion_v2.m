@@ -337,42 +337,47 @@ end
 %     saveas(h_nk4_cyl,[configs.files.dirout,fname_str,'.fig']);
 % end
 
+%% Select core analysis data
+k=hist_k_cyl_1D.binCent{1};     % k-bin centres (exp-spaced)
+nk=nden_k_cyl_1D{1};            % evaluated density at k-point
+
+
 
 %% Smooth profile
-nk_sm_avg=smooth(nk_bgd_free_clean,configs.smooth.nspan,'moving');  % simple moving average filter
+% nk_sm_avg=smooth(nk_bgd_free_clean,configs.smooth.nspan,'moving');  % simple moving average filter
 
-% Gaussian smoothing
-g_filt=gausswin(configs.smooth.nspan);
-g_filt=g_filt/sum(g_filt);
-nk_sm_gauss=conv(nk_bgd_free_clean,g_filt,'same');
+% % Gaussian smoothing
+% g_filt=gausswin(configs.smooth.nspan);
+% g_filt=g_filt/sum(g_filt);
+% nk_sm_gauss=conv(nk_bgd_free_clean,g_filt,'same');
+% 
+% nk_sm_std=movingstd(nk_bgd_free_clean,configs.smooth.nspan,'central');   % moving std
 
-nk_sm_std=movingstd(nk_bgd_free_clean,configs.smooth.nspan,'central');   % moving std
-
-% smoothing in logspace
+% % smoothing in logspace
 
 
-% plot smoothed data
-if verbose>0    % plot
-    h_nk_sm=figure();
-    figure(h_nk_sm);
-    hold on; box on;
-    
-    shadedErrorBar(1e-6*k_clean,1e18*nk_sm_avg,1e18*nk_sm_std,'k');
-    
-    shadedErrorBar(1e-6*k_clean,1e18*nk_sm_gauss,1e18*nk_sm_std,'b');
-    
-    set(gca,'xScale','log');
-    set(gca,'yScale','log');
-    axis tight;
-    grid on;
-    
-    title('smoothed momentum density profile');
-    xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
-    
-    fname_str='nk_smoothed';
-    saveas(h_nk_sm,[configs.files.dirout,fname_str,'.png']);
-    saveas(h_nk_sm,[configs.files.dirout,fname_str,'.fig']);
-end
+% % plot smoothed data
+% if verbose>0    % plot
+%     h_nk_sm=figure();
+%     figure(h_nk_sm);
+%     hold on; box on;
+%     
+%     shadedErrorBar(1e-6*k_clean,1e18*nk_sm_avg,1e18*nk_sm_std,'k');
+%     
+%     shadedErrorBar(1e-6*k_clean,1e18*nk_sm_gauss,1e18*nk_sm_std,'b');
+%     
+%     set(gca,'xScale','log');
+%     set(gca,'yScale','log');
+%     axis tight;
+%     grid on;
+%     
+%     title('smoothed momentum density profile');
+%     xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
+%     
+%     fname_str='nk_smoothed';
+%     saveas(h_nk_sm,[configs.files.dirout,fname_str,'.png']);
+%     saveas(h_nk_sm,[configs.files.dirout,fname_str,'.fig']);
+% end
 
 
 %% Fit density profile
@@ -380,17 +385,21 @@ end
 ratio_extrap=1;
 
 % fit to raw data
-[~,I_qd]=min(abs(hist_k_cyl_1D.binCent{idxparam}-configs.fit.k_min));  % get index from which to fit QD neg-power law
+%[~,I_qd]=min(abs(hist_k_cyl_1D.binCent{idxparam}-configs.fit.k_min));  % get index from which to fit QD neg-power law
+[~,I_qd]=min(abs(k-configs.fit.k_min));  % get index from which to fit QD neg-power law
 
 % get fitting data
-k4cyl_fit.QD.k_log=log(hist_k_cyl_1D.binCent{idxparam}(I_qd:end));   
-k4cyl_fit.QD.nk_log=real(log(nk_bgd_free(I_qd:end)));
+% k4cyl_fit.QD.k_log=log(hist_k_cyl_1D.binCent{idxparam}(I_qd:end));   
+% k4cyl_fit.QD.nk_log=real(log(nk_bgd_free(I_qd:end)));
 k4cyl_fit.QD.nk_log(isinf(k4cyl_fit.QD.nk_log))=NaN;    % infinity to NaN
 
 k4cyl_fit.QD.fit=fitnlm(k4cyl_fit.QD.k_log,k4cyl_fit.QD.nk_log,...
     configs.fit.fun_negpowk,configs.fit.param0,...
     'CoefficientNames',configs.fit.fun_coefname,...
     'Options',configs.fit.opt);
+
+k_fit.QD.lg_k=log(k(I_qd:end));
+k_fit.QD.lg_nk=log(nk(I_qd:end));
 
 % Summarise fit
 disp(k4cyl_fit.QD.fit);
