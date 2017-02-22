@@ -11,9 +11,9 @@ verbose=1;
 
 %%% Raw data handling
 % files -  data file
-configs.files.path='C:\Users\HE BEC\Documents\lab\quantum-depletion\exp5\d';    % path to unindexed data file (e.g. 'a\b\datadir\$DATA_FNAME_TOKEN$')
-configs.files.id=1:1000;          % file id numbers to use for analysis
-configs.files.minCount=0;     % min counts to use for analysis
+configs.files.path='C:\Users\HE BEC\Documents\lab\quantum-depletion\exp7\d';    % path to unindexed data file (e.g. 'a\b\datadir\$DATA_FNAME_TOKEN$')
+configs.files.id=1:150;          % file id numbers to use for analysis
+configs.files.minCount=1000;     % min counts to use for analysis
 
 
 % XY plane rotation to align to trap geometry
@@ -27,7 +27,7 @@ configs.window{2}=[-45e-3,40e-3];    % X [m]
 configs.window{3}=[-50e-3,38e-3];    % Y [m]
 
 % Param set
-configs.paramset=2;     % TODO: number of params iterated
+configs.paramset=1;     % TODO: number of params iterated
 
 % BEC locator - used for accurate location of condensate
 configs.bec.txy_pos=[0.5715,-3.45e-3,-10e-3];       % approx bec location (get from DLD front panel)
@@ -51,11 +51,14 @@ configs.cylsect_trans_hwidth=k2r(0.8e6);          % transverse averaging half wi
 configs.hist.nbin=100;   % used for real space and linear-k distribution
 % TODO - (log-spaced) bin edges to use in k-space --> simplifies anisotropic
 % analysis
-configs.hist.ed_lgk=logspace(log10(0.3e6),log10(20e6),1000);   % 10^X [m^-1 == 1e-6 um^-1]
+configs.hist.ed_lgk=logspace(log10(0.3e6),log10(20e6),20);   % 10^X [m^-1 == 1e-6 um^-1]
 
+% DEBUG FOR FLAT BACKGROUND
+do_flat=0;
 
 %% Smoothing
-configs.smooth.nspan=11;
+% TODO: understand this better!
+configs.smooth.nspan=3;
 
 %% Fit to large-k tail
 %% TODO
@@ -74,24 +77,9 @@ configs.smooth.nspan=11;
 %     'UseParallel',1,...
 %     'Display','off');
 
-% %%% Quantum depletion - power law
-% % fitting region
-% configs.fit.k_min=8e6;      % lower bound k to use for fit [m^-1]
-% % fitting function
-% configs.fit.fun_negpowk='y~A*(x1^(-alpha))';    % negative-power function
-% configs.fit.fun_coefname={'A','alpha'};         % function coefficient names
-% % initial conditions
-% configs.fit.param0=[1e10,4.0];   % (A, alpha)
-% % fit options
-% configs.fit.opt=statset('TolFun',1e-30,...
-%     'TolX',1e-30,...
-%     'MaxIter',1e8,...
-%     'UseParallel',1,...
-%     'Display','off');
-
 %%% Quantum depletion - loglog transformed linear
 % fitting region
-configs.fit.k_min=6.5e6;      % lower bound k to use for fit [m^-1]
+configs.fit.k_min=4.3e6;      % lower bound k to use for fit [m^-1]
 % fitting function
 configs.fit.fun_negpowk='y~A-alpha*x1';     % linearised fitting function
 configs.fit.fun_coefname={'A','alpha'};    	% function coefficient names
