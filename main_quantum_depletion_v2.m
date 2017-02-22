@@ -154,7 +154,7 @@ if verbose>1
 %     end
     
     h_zxy_ff=figure();
-    
+    figure(h_zxy_ff);
 %     subplot(1,2,1);
 %     plot_zxy(zxy_0{1}(1:nShotSumm),20,'k');    
 %     title('Condensate point cloud (Summary)');
@@ -222,18 +222,17 @@ end
 cyl_dtheta=diff(configs.cylsect_theta_lims);
 cyl_dtrans=2*r2k(configs.cylsect_trans_hwidth);
 
+% indices captured in section
+idx_cyl_sect=cell(configs.paramset,1);
+for idxparam=1:configs.paramset
+    nShot_this=size(k_cyl{idxparam},1);
+    idx_cyl_sect{idxparam}=cell(nShot_this,1);
+    for iShot=1:nShot_this
+        idx_cyl_sect{idxparam}{iShot}=1:size(k_cyl{idxparam}{iShot},1);     % get all indices
+    end
+end
+
 k_cyl_sect=cell(configs.paramset,1);
-
-% TODO: finish below
-% % indices captured in section
-% idx_cyl_sect=cell(configs.paramset,1);
-% for idxparam=1:configs.paramset
-%     nShot_this=
-%     idx_cyl_sect{idxparam}=cell(size(k_cyl{idxparam}));
-%     for iShot=1:
-% end
-
-
 for idxparam=1:configs.paramset
     k_cyl_sect{idxparam}=cell(size(k_cyl{idxparam}));
     for i=1:nShot_this
@@ -245,13 +244,40 @@ for idxparam=1:configs.paramset
         ind_tmp=(theta_tmp<cyl_dtheta);   % indices lying in defined angular sector
         
         k_cyl_sect{idxparam}{i}=k_cyl_sect{idxparam}{i}(ind_tmp,:);   % cull
+        idx_cyl_sect{idxparam}{i}=idx_cyl_sect{idxparam}{i}(ind_tmp);   % update captured indices
         
         % cull to transverse width
         k_trans_tmp=k_cyl_sect{idxparam}{i}(:,3);  % transverse k
         ind_tmp=(abs(k_trans_tmp)<r2k(configs.cylsect_trans_hwidth));   % indices lying in defined angular section
         
         k_cyl_sect{idxparam}{i}=k_cyl_sect{idxparam}{i}(ind_tmp,:);   % cull
+        idx_cyl_sect{idxparam}{i}=idx_cyl_sect{idxparam}{i}(ind_tmp);   % update captured indices
     end
+end
+
+%% Build captured ZXY counts (cartesian)
+% TODO: this is quite tedious - write function to convert cart to cyl coord systems
+zxy_0_captured=cell(configs.paramset,1);   % zxy counts captured
+for idxparam=1:configs.paramset
+    nShot_this=size(zxy_0{idxparam},1);
+    for iShot=1:nShot_this
+        % extract captured counts
+        zxy_0_captured{idxparam}{iShot}=zxy_0{idxparam}{iShot}(idx_cyl_sect{idxparam}{iShot},:);
+    end
+end
+
+% Plot - highlight captured counts from the summary point cloud
+% TODO: for param modes >1
+if verbose>1
+    figure(h_zxy_ff);
+    hold on;
+    
+    plot_zxy(zxy_0_captured{1},[],30,'r');      % highlight all the counts captured
+    
+    % save plot
+    fname_str='zxy_ff';
+    saveas(h_zxy_ff,[configs.files.dirout,fname_str,'.png']);
+    saveas(h_zxy_ff,[configs.files.dirout,fname_str,'.fig']);
 end
 
 %% Get 1D-k
