@@ -116,64 +116,71 @@ std_bec_cent=std(bec_cent,1);
 
 
 %% Param set #2
-txy_temp=txy_cat{2};    % the background counts set (RF sweep off)
-nShot_temp=numel(txy_temp);     % number of shots in set
-num_txy_raw=zeros(1,nShot_temp); % number of counts in loaded shot
-
-% Centre to mean BEC position
-for i=1:nShot_temp
-    num_txy_raw(i)=size(txy_temp{i},1);      % number of counts in this shot
-    txy_0{2}{i}=txy_temp{i}-repmat(avg_bec_cent,[num_txy_raw(i),1]);   % centre around BEC avg
-    
-    % T-Z conversion
-    zxy_0{2}{i}=txy_0{2}{i};
-    zxy_0{2}{i}(:,1)=zxy_0{2}{i}(:,1)*vz;     % TOF - dz at time of detection
-end
-
-
-%% Plot far-field ZXY (summary)
-if verbose>1
-    nShotSumm=50;   % number of shots to plot as summary
-    if min(size(zxy_0{1},1),size(zxy_0{2},1))<nShotSumm
-        nShotSumm=min(size(zxy_0{1},1),size(zxy_0{2},1));
+if configs.paramset>1
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % DEBUG FOR FLAT BACKGROUND
+    if do_flat
+        run('flat_background.m');
     end
+    if exist('TXY_FLAT','var')
+        txy_temp=TXY_FLAT;
+        avg_bec_cent=[0,0,0];
+    else
+        txy_temp=txy_cat{2};    % the background counts set (RF sweep off)
+    end
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-    h_zxy_ff=figure();
+    nShot_temp=numel(txy_temp);     % number of shots in set
+    num_txy_raw=zeros(1,nShot_temp); % number of counts in loaded shot
     
-    subplot(1,2,1);
-    plot_zxy(zxy_0{1}(1:nShotSumm),20,'k');    
-    title('Condensate point cloud (Summary)');
-    xlabel('X [m]'); ylabel('Y [m]'); zlabel('Z [m]');
-    view(3);
-    axis equal;
-    
-    subplot(1,2,2);
-    plot_zxy(zxy_0{2}(1:nShotSumm),20,'k');    
-    title('Condensate point cloud (Summary)');
-    xlabel('X [m]'); ylabel('Y [m]'); zlabel('Z [m]');
-    view(3);
-    axis equal;
-    
-    % save plot
-    fname_str='zxy_ff';
-    saveas(h_zxy_ff,[configs.files.dirout,fname_str,'.png']);
-    saveas(h_zxy_ff,[configs.files.dirout,fname_str,'.fig']);
+    % Centre to mean BEC position
+    for i=1:nShot_temp
+        num_txy_raw(i)=size(txy_temp{i},1);      % number of counts in this shot
+        txy_0{2}{i}=txy_temp{i}-repmat(avg_bec_cent,[num_txy_raw(i),1]);   % centre around BEC avg
+        
+        % T-Z conversion
+        zxy_0{2}{i}=txy_0{2}{i};
+        zxy_0{2}{i}(:,1)=zxy_0{2}{i}(:,1)*vz;     % TOF - dz at time of detection
+    end
 end
 
+% % Plot far-field ZXY (summary)
+% if verbose>1
+%     nShotSumm=50;   % number of shots to plot as summary
+%     if min(size(zxy_0{1},1),size(zxy_0{2},1))<nShotSumm
+%         nShotSumm=min(size(zxy_0{1},1),size(zxy_0{2},1));
+%     end
+%     
+%     h_zxy_ff=figure();
+%     
+%     subplot(1,2,1);
+%     plot_zxy(zxy_0{1}(1:nShotSumm),20,'k');    
+%     title('Condensate point cloud (Summary)');
+%     xlabel('X [m]'); ylabel('Y [m]'); zlabel('Z [m]');
+%     view(3);
+%     axis equal;
+%     
+%     subplot(1,2,2);
+%     plot_zxy(zxy_0{2}(1:nShotSumm),20,'k');    
+%     title('Condensate point cloud (Summary)');
+%     xlabel('X [m]'); ylabel('Y [m]'); zlabel('Z [m]');
+%     view(3);
+%     axis equal;
+%     
+%     % save plot
+%     fname_str='zxy_ff';
+%     saveas(h_zxy_ff,[configs.files.dirout,fname_str,'.png']);
+%     saveas(h_zxy_ff,[configs.files.dirout,fname_str,'.fig']);
+% end
 
-%% Cylindrical sector for angular averaging
-% get cylindrical sector params
-cyl_dtheta=diff(configs.cylsect_theta_lims);
-cyl_dtrans=2*r2k(configs.cylsect_trans_hwidth);
 
+%% Cart-Cyl(axix=X) coord transform
+% convert BEC centered real-space counts to cylindrically symmetric coord system
+% FORMAT: R_CYL = (rad_plane,theta,dist_transverse)
 R0_cyl=cell(configs.paramset,1);    % init cell array
 k_cyl=cell(configs.paramset,1);
-k_cyl_sect=cell(configs.paramset,1);
-k_1D_cyl=cell(configs.paramset,1);
+
 for idxparam=1:configs.paramset
-    %% Cart-Cyl(axix=X) coord transform
-    % convert BEC centered real-space counts to cylindrically symmetric coord system
-    % FORMAT: R_CYL = (rad_plane,theta,dist_transverse)
     R0_cyl{idxparam}=cell(size(zxy_0{idxparam}));
     nShot_this=size(zxy_0{idxparam},1);
     for i=1:nShot_this
@@ -189,11 +196,6 @@ for idxparam=1:configs.paramset
         
         % store cyl coords
         R0_cyl{idxparam}{i}=[R_yz,Theta,H_perp];
-        
-%         R0_cyl{idxparam}{i}=zeros(size(zxy_0{idxparam}{i}));
-%         R0_cyl{idxparam}{i}(:,1)=sqrt(sum(zxy_0{idxparam}{i}(:,[1,3]).^2,2));   % get in-plane radius [m]
-%         R0_cyl{idxparam}{i}(:,2)=wrapToPi(atan2(zxy_0{idxparam}{i}(:,1),zxy_0{idxparam}{i}(:,3))+pi/2);     % theta origin is pointing "down" in Z [-pi,pi]
-%         R0_cyl{idxparam}{i}(:,3)=zxy_0{idxparam}{i}(:,2);       % transverse direction is in X [m]
     end
     
     % convert cylindrical R to k-space
@@ -203,7 +205,15 @@ for idxparam=1:configs.paramset
         k_cyl{idxparam}{i}(:,3)=r2k(k_cyl{idxparam}{i}(:,3));
     end
     
-    %% crop to region of interest for binning k (cylindrical section)
+end
+
+%% crop cylindrical section
+% get cylindrical sector params
+cyl_dtheta=diff(configs.cylsect_theta_lims);
+cyl_dtrans=2*r2k(configs.cylsect_trans_hwidth);
+
+k_cyl_sect=cell(configs.paramset,1);
+for idxparam=1:configs.paramset
     k_cyl_sect{idxparam}=cell(size(k_cyl{idxparam}));
     for i=1:nShot_this
         k_cyl_sect{idxparam}{i}=k_cyl{idxparam}{i};  % get everything
@@ -221,12 +231,18 @@ for idxparam=1:configs.paramset
         
         k_cyl_sect{idxparam}{i}=k_cyl_sect{idxparam}{i}(ind_tmp,:);   % cull
     end
+end
+
+%% Get 1D-k
+k_1D_cyl=cell(configs.paramset,1);
+for idxparam=1:configs.paramset
     
-    % Get 1D-k
     k_1D_cyl{idxparam}=vertcat(k_cyl_sect{idxparam}{:});
     k_1D_cyl{idxparam}=k_1D_cyl{idxparam}(:,1);     % collate all shots
-    
-    %%% Histogram
+end
+
+%% Histogram in k-space
+for idxparam=1:configs.paramset 
     % get hist params
     hist_k_cyl_1D.binEdge{idxparam}=configs.hist.ed_lgk;     % get log-spaced edges
     hist_k_cyl_1D.binCent{idxparam}=sqrt(hist_k_cyl_1D.binEdge{idxparam}(1:end-1).*hist_k_cyl_1D.binEdge{idxparam}(2:end));   % GEOM avg bin centres
@@ -288,14 +304,6 @@ if verbose>0
         plot(1e-6*hist_k_cyl_1D.binCent{idxparam},...
             1e18*nden_k_cyl_1D{idxparam},'.','MarkerSize',10);     % scale units appropriately
     end
-    
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Quantisation noise in histogram and number density must be resolved
-%
-%     % plot background subtracted density profile
-%     plot(1e-6*hist_k_cyl_1D.binCent{idxparam},...
-%         1e18*nk_bgd_free,'-');     % scale units appropriately
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     set(gca,'xScale','log');
     set(gca,'yScale','log');
@@ -311,6 +319,7 @@ if verbose>0
     % plot dark count noise floor (note: must be plotted after setting axis to log scale)
     h_darkcount=refline([0,1e18*configs.limit.det_dark_nk]);
     h_darkcount.Color='r';
+    h_darkcount.DisplayName='Dark count';
     
     fname_str='nk_cyl_1D_loglog';
     saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'.png']);
@@ -337,47 +346,52 @@ end
 %     saveas(h_nk4_cyl,[configs.files.dirout,fname_str,'.fig']);
 % end
 
-%% Select core analysis data
+%% Post process core analysis data
+% Smooth histogram
+Nk_sm=cell(configs.paramset,1);     % smoothed hist counts
+g_filt=cell(configs.paramset,1);     % gaussian filter window
+for idxparam=1:configs.paramset
+    % copy from raw
+    Nk_sm{idxparam}=hist_k_cyl_1D.N{idxparam};
+    
+    %% Gaussian smoothing
+    g_filt{idxparam}=gausswin(configs.smooth.nspan);    % build filter
+    g_filt{idxparam}=g_filt{idxparam}/sum(g_filt{idxparam});    % normalise
+    
+    % apply smoothing filter
+    Nk_sm{idxparam}=conv(Nk_sm{idxparam},g_filt{idxparam},'same');
+    
+    %% Plot
+    if verbose>0
+        figure(h_k1D_hist);
+        legend_str_this=sprintf('%d gauss smooth [%d]',idxparam,configs.smooth.nspan);
+        plot(1e-6*hist_k_cyl_1D.binCent{idxparam},Nk_sm{idxparam},...
+            '.-','MarkerSize',10,'DisplayName',legend_str_this);
+        legend(gca,'off')
+        legend(gca,'show');
+    end
+end
+
+% Smoothed density profile
+nk_sm=cell(configs.paramset,1);     % smoothed k-density
+for idxparam=1:configs.paramset
+    nShot_this=size(zxy_0{idxparam},1);
+    nk_sm{idxparam}=Nk_sm{idxparam}./(nShot_this*detQE*dk_cyl_volume{idxparam});  % normalised for: shot, QE, phase space volume
+
+    % Plot
+    if verbose>0
+        figure(h_nk_cyl_1D_log);
+        legend_str_this=sprintf('%d gauss smooth [%d]',idxparam,configs.smooth.nspan);
+        plot(1e-6*hist_k_cyl_1D.binCent{idxparam},1e18*nk_sm{idxparam},...
+            '.-','MarkerSize',10,'DisplayName',legend_str_this);
+        legend(gca,'off')
+        legend(gca,'show');
+    end
+end
+
+% get data for further analysis
 k=hist_k_cyl_1D.binCent{1};     % k-bin centres (exp-spaced)
-nk=nden_k_cyl_1D{1};            % evaluated density at k-point
-
-
-
-%% Smooth profile
-% nk_sm_avg=smooth(nk_bgd_free_clean,configs.smooth.nspan,'moving');  % simple moving average filter
-
-% % Gaussian smoothing
-% g_filt=gausswin(configs.smooth.nspan);
-% g_filt=g_filt/sum(g_filt);
-% nk_sm_gauss=conv(nk_bgd_free_clean,g_filt,'same');
-% 
-% nk_sm_std=movingstd(nk_bgd_free_clean,configs.smooth.nspan,'central');   % moving std
-
-% % smoothing in logspace
-
-
-% % plot smoothed data
-% if verbose>0    % plot
-%     h_nk_sm=figure();
-%     figure(h_nk_sm);
-%     hold on; box on;
-%     
-%     shadedErrorBar(1e-6*k_clean,1e18*nk_sm_avg,1e18*nk_sm_std,'k');
-%     
-%     shadedErrorBar(1e-6*k_clean,1e18*nk_sm_gauss,1e18*nk_sm_std,'b');
-%     
-%     set(gca,'xScale','log');
-%     set(gca,'yScale','log');
-%     axis tight;
-%     grid on;
-%     
-%     title('smoothed momentum density profile');
-%     xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
-%     
-%     fname_str='nk_smoothed';
-%     saveas(h_nk_sm,[configs.files.dirout,fname_str,'.png']);
-%     saveas(h_nk_sm,[configs.files.dirout,fname_str,'.fig']);
-% end
+nk=nk_sm{1};            % evaluated density at k-point
 
 
 %% Fit density profile
@@ -385,41 +399,34 @@ nk=nden_k_cyl_1D{1};            % evaluated density at k-point
 ratio_extrap=1;
 
 % fit to raw data
-%[~,I_qd]=min(abs(hist_k_cyl_1D.binCent{idxparam}-configs.fit.k_min));  % get index from which to fit QD neg-power law
 [~,I_qd]=min(abs(k-configs.fit.k_min));  % get index from which to fit QD neg-power law
 
 % get fitting data
-% k4cyl_fit.QD.k_log=log(hist_k_cyl_1D.binCent{idxparam}(I_qd:end));   
-% k4cyl_fit.QD.nk_log=real(log(nk_bgd_free(I_qd:end)));
-k4cyl_fit.QD.nk_log(isinf(k4cyl_fit.QD.nk_log))=NaN;    % infinity to NaN
+k_fit.QD.lg_k=log(k(I_qd:end));
+k_fit.QD.lg_nk=log(nk(I_qd:end));
 
-k4cyl_fit.QD.fit=fitnlm(k4cyl_fit.QD.k_log,k4cyl_fit.QD.nk_log,...
+% call fitting routine
+k_fit.QD.fit=fitnlm(k_fit.QD.lg_k,k_fit.QD.lg_nk,...
     configs.fit.fun_negpowk,configs.fit.param0,...
     'CoefficientNames',configs.fit.fun_coefname,...
     'Options',configs.fit.opt);
 
-k_fit.QD.lg_k=log(k(I_qd:end));
-k_fit.QD.lg_nk=log(nk(I_qd:end));
-
 % Summarise fit
-disp(k4cyl_fit.QD.fit);
+disp(k_fit.QD.fit);
 
 % build a sample of the fitted model's profile
-% ratio_extrap=1.5;
-k4cyl_fit.QD.k_log_fit=linspace((min(k4cyl_fit.QD.k_log)),max(k4cyl_fit.QD.k_log),1000);   % indep var to evaluate fitted function
-k4cyl_fit.QD.nk_log_fit=feval(k4cyl_fit.QD.fit,k4cyl_fit.QD.k_log_fit);  % evaluate fitted model
+k_fit.QD.lg_k_fit=linspace((min(k_fit.QD.lg_k)),max(k_fit.QD.lg_k),1000);   % indep var to evaluate fitted function
+k_fit.QD.lg_nk_fit=feval(k_fit.QD.fit,k_fit.QD.lg_k_fit);  % evaluate fitted model
 
 % Plot
 figure(h_nk_cyl_1D_log); hold on;
-plot(1e-6*exp(k4cyl_fit.QD.k_log_fit),1e18*exp(k4cyl_fit.QD.nk_log_fit),'k--');
+plot(1e-6*exp(k_fit.QD.lg_k_fit),1e18*exp(k_fit.QD.lg_nk_fit),'k--');
 
 % tight axis
 axis tight;
 
 % Save plot
 fname_str='nk_cyl_fit';
-% saveas(h_nk_cyl_avg,[configs.files.dirout,fname_str,'.png']);
-% saveas(h_nk_cyl_avg,[configs.files.dirout,fname_str,'.fig']);
 
 saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'.png']);
 saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'.fig']);
