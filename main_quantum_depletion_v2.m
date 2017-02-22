@@ -4,7 +4,7 @@
 clear all; close all; clc;
 
 %%% USER INPUTS
-path_config='C:\Users\HE BEC\Documents\MATLAB\quantum-depletion\config_v2.m';
+path_config='C:\Users\David\Documents\MATLAB\quantum-depletion\config_v2.m';
 
 % note: getting param id from logfile is not implemented yet
 % path_param_log='C:\Users\HE BEC\Documents\lab\quantum-depletion\exp5\log_test.txt';   
@@ -260,6 +260,7 @@ end
 zxy_0_captured=cell(configs.paramset,1);   % zxy counts captured
 for idxparam=1:configs.paramset
     nShot_this=size(zxy_0{idxparam},1);
+    zxy_0_captured{idxparam}=cell(nShot_this,1);    % initialise size
     for iShot=1:nShot_this
         % extract captured counts
         zxy_0_captured{idxparam}{iShot}=zxy_0{idxparam}{iShot}(idx_cyl_sect{idxparam}{iShot},:);
@@ -445,12 +446,19 @@ nk=nk_sm{1};            % evaluated density at k-point
 % common
 ratio_extrap=1;
 
-% fit to raw data
-[~,I_qd]=min(abs(k-configs.fit.k_min));  % get index from which to fit QD neg-power law
+% get fitting region
+% [~,I_qd]=min(abs(k-configs.fit.k_min));  % get index from which to fit QD neg-power law
+I_qd=zeros(1,2);        % [min,max] index lims
+for idx=1:2    
+    [~,I_qd(idx)]=min(abs(k-configs.fit.k_lim(idx)));   % get indices to closest k-cent bin
+end
 
 % get fitting data
-k_fit.QD.lg_k=log(k(I_qd:end));
-k_fit.QD.lg_nk=log(nk(I_qd:end));
+% k_fit.QD.lg_k=log(k(I_qd:end));
+% k_fit.QD.lg_nk=log(nk(I_qd:end));
+k_fit.QD.lg_k=log(k(I_qd(1):I_qd(2)));
+k_fit.QD.lg_nk=log(nk(I_qd(1):I_qd(2)));
+
 
 % call fitting routine
 k_fit.QD.fit=fitnlm(k_fit.QD.lg_k,k_fit.QD.lg_nk,...
