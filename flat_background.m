@@ -1,16 +1,17 @@
 % TXY_FLAT is from a flat background (3D linearly spaced points in a similar
 % range as experiment)
+% NOTE: TXY_FLAT is origin centred
 
 % Lims
-LIM{1}=[-0.075,0.075];   % T[s]
-LIM{2}=[-40e-3,40e-3];   % X[m]
-LIM{3}=[-40e-3,40e-3];   % Y[m]
+LIM{1}=[-0.1,0.1];          % T[s]
+LIM{2}=[-40e-3,40e-3];      % X[m]
+LIM{3}=[-40e-3,40e-3];      % Y[m]
 
 if ~exist('N_PER_SHOT','var')
     N_PER_SHOT=10;
 end
 if ~exist('N_SHOT','var')
-    N_SHOT=3000;
+    N_SHOT=1000;
 end
 
 TXY_FLAT=cell(N_SHOT,1);
@@ -24,3 +25,9 @@ for iShot=1:N_SHOT
     end
 end
 
+% Plot
+figure();
+plot_zxy(TXY_FLAT);
+view(3);
+title('Simulated flat background');
+xlabel('X [m]');ylabel('Y [m]');zlabel('T [s]');
