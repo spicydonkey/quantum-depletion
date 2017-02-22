@@ -144,15 +144,17 @@ if configs.paramset>1
     end
 end
 
-% % Plot far-field ZXY (summary)
-% if verbose>1
+
+%% Plot far-field ZXY (summary)
+% TODO: handle multiple param sets
+if verbose>1
 %     nShotSumm=50;   % number of shots to plot as summary
 %     if min(size(zxy_0{1},1),size(zxy_0{2},1))<nShotSumm
 %         nShotSumm=min(size(zxy_0{1},1),size(zxy_0{2},1));
 %     end
-%     
-%     h_zxy_ff=figure();
-%     
+    
+    h_zxy_ff=figure();
+    
 %     subplot(1,2,1);
 %     plot_zxy(zxy_0{1}(1:nShotSumm),20,'k');    
 %     title('Condensate point cloud (Summary)');
@@ -166,15 +168,23 @@ end
 %     xlabel('X [m]'); ylabel('Y [m]'); zlabel('Z [m]');
 %     view(3);
 %     axis equal;
-%     
-%     % save plot
-%     fname_str='zxy_ff';
-%     saveas(h_zxy_ff,[configs.files.dirout,fname_str,'.png']);
-%     saveas(h_zxy_ff,[configs.files.dirout,fname_str,'.fig']);
-% end
+    
+    plot_zxy(zxy_0{1},configs.num_count_disp,20,'k');
+    
+%     title_str=sprintf('');
+%     title(title_str);
+    xlabel('X [m]'); ylabel('Y [m]'); zlabel('Z [m]');
+    view(3);
+    axis equal;
+    
+    % save plot
+    fname_str='zxy_ff';
+    saveas(h_zxy_ff,[configs.files.dirout,fname_str,'.png']);
+    saveas(h_zxy_ff,[configs.files.dirout,fname_str,'.fig']);
+end
 
 
-%% Cart-Cyl(axix=X) coord transform
+%% Cart-Cyl(axis=X) coord transform
 % convert BEC centered real-space counts to cylindrically symmetric coord system
 % FORMAT: R_CYL = (rad_plane,theta,dist_transverse)
 R0_cyl=cell(configs.paramset,1);    % init cell array
@@ -213,6 +223,17 @@ cyl_dtheta=diff(configs.cylsect_theta_lims);
 cyl_dtrans=2*r2k(configs.cylsect_trans_hwidth);
 
 k_cyl_sect=cell(configs.paramset,1);
+
+% TODO: finish below
+% % indices captured in section
+% idx_cyl_sect=cell(configs.paramset,1);
+% for idxparam=1:configs.paramset
+%     nShot_this=
+%     idx_cyl_sect{idxparam}=cell(size(k_cyl{idxparam}));
+%     for iShot=1:
+% end
+
+
 for idxparam=1:configs.paramset
     k_cyl_sect{idxparam}=cell(size(k_cyl{idxparam}));
     for i=1:nShot_this
