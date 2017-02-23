@@ -12,16 +12,10 @@ path_config='C:\Users\HE BEC\Documents\MATLAB\quantum-depletion\config_v2.m';
 % vars to save to output
 vars_save={'path_config',...
     'zxy_0','files_out',...
-    'r_1D','k_1D',...
-    'r_perp_area','k_perp_area'...
-    'hist_r1D','nden_r1D','nden_k1D',...
-    'hist_lgk1D','nden_lgk1D',...
+    'k_1D_cyl',...
     'nk4',...
-    'nden_lgk_avg','nden_lgk_std','nden_lgk_se',...
-    'k4_fit'...
     'hist_k_cyl_1D','nden_k_cyl_1D',...
-    'nden_k_cyl_avg','nden_k_cyl_std','nden_k_cyl_se',...
-    'k4cyl_fit'...
+    'nk','nk_se'...
     };
 
 
@@ -37,8 +31,6 @@ m_He=configs.const.m_He;
 tof=configs.const.tof;
 vz=9.8*tof;     % atom free-fall vert v at detector hit for T-to-Z conversion;
 detQE=configs.const.detect_qe;
-
-hist_r1D.binN=configs.hist.nbin;    % get number of bins to set up auto
 
 % Load TXY data and crop to region of interest
 [txy_raw,files_out]=loadExpData(configs,verbose);
@@ -381,7 +373,7 @@ if verbose>0
     
     title('Histogram');
     xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('Number in BIN$(k)$');
-    legend({'RF sweep ON','RF sweep OFF'}); % TODO - modular for param set variability
+%     legend({'RF sweep ON','RF sweep OFF'}); % TODO - modular for param set variability
     
     fname_str='hist_k1D';
     saveas(h_k1D_hist,[configs.files.dirout,fname_str,'.png']);
@@ -518,7 +510,6 @@ end
 k_fit.QD.lg_k=log(k(I_qd(1):I_qd(2)));
 k_fit.QD.lg_nk=log(nk(I_qd(1):I_qd(2)));
 
-
 % call fitting routine
 k_fit.QD.fit=fitnlm(k_fit.QD.lg_k,k_fit.QD.lg_nk,...
     configs.fit.fun_negpowk,configs.fit.param0,...
@@ -542,6 +533,18 @@ plot(1e-6*exp(k_fit.QD.lg_k_fit),1e18*exp(k_fit.QD.lg_nk_fit),...
 axis tight;
 legend(gca,'off')
 legend(gca,'show');
+
+% Patch fitting region
+ax_this=gca;
+ylim_region=ax_this.YLim;               % Y-lim to axis lims
+xlim_region=1e-6*configs.fit.k_lim;     % X-lim to fitting region
+
+vert_region=[xlim_region flip(xlim_region);ylim_region(1) ylim_region(1) ylim_region(2) ylim_region(2)]';
+face_region=1:4;
+
+h_patch_region=patch('Faces',face_region,'Vertices',vert_region,...
+    'FaceColor','blue','EdgeColor','none','FaceAlpha',0.1);
+uistack(h_patch_region,'bottom');   % send patch object to bottom
 
 % Save plot
 fname_str='nk_cyl_fit';
