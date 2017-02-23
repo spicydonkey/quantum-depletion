@@ -4,7 +4,7 @@
 clear all; close all; clc;
 
 %%% USER INPUTS
-path_config='C:\Users\David\Documents\MATLAB\quantum-depletion\config_v2.m';
+path_config='C:\Users\HE BEC\Documents\MATLAB\quantum-depletion\config_v2.m';
 
 % note: getting param id from logfile is not implemented yet
 % path_param_log='C:\Users\HE BEC\Documents\lab\quantum-depletion\exp5\log_test.txt';   
@@ -183,6 +183,37 @@ if verbose>1
     saveas(h_zxy_ff,[configs.files.dirout,fname_str,'.fig']);
 end
 
+%% Far-field k-vectors
+% TODO: can use k_zxy as data to update following procedures
+
+% Build data in cartesian k-vector array
+k_zxy=cell(configs.paramset,1);     % data in Cartesian k-vector array
+for idxparam=1:configs.paramset
+    nShot_this=size(zxy_0{idxparam},1);
+    k_zxy{idxparam}=cell(nShot_this,1);
+    for iShot=1:nShot_this
+        k_zxy{idxparam}{iShot}=r2k(zxy_0{idxparam}{iShot});
+    end
+end
+
+%% Plot Far-field k-vectors (summary)
+% TODO: handle multiple param sets
+if verbose>1    
+    h_k_ff=figure();
+    figure(h_k_ff);
+    
+    plot_zxy(k_zxy{1},configs.num_count_disp,20,'k');
+    
+    xlabel('$k_X$ [m$^{-1}$]'); ylabel('$k_Y$ [m$^{-1}$]'); zlabel('$k_Z$ [m$^{-1}$]');
+    view(3);
+    axis equal;
+    
+    % save plot
+    fname_str='k_ff';
+    saveas(h_k_ff,[configs.files.dirout,fname_str,'.png']);
+    saveas(h_k_ff,[configs.files.dirout,fname_str,'.fig']);
+end
+
 
 %% Cart-Cyl(axis=X) coord transform
 % convert BEC centered real-space counts to cylindrically symmetric coord system
@@ -255,30 +286,45 @@ for idxparam=1:configs.paramset
     end
 end
 
-%% Build captured ZXY counts (cartesian)
+%% Build captured counts (cartesian)
 % TODO: this is quite tedious - write function to convert cart to cyl coord systems
-zxy_0_captured=cell(configs.paramset,1);   % zxy counts captured
+zxy_0_captured=cell(configs.paramset,1);    % zxy counts captured
+k_zxy_captured=cell(configs.paramset,1);    % k-vects captured
 for idxparam=1:configs.paramset
     nShot_this=size(zxy_0{idxparam},1);
     zxy_0_captured{idxparam}=cell(nShot_this,1);    % initialise size
+    k_zxy_captured{idxparam}=cell(nShot_this,1);    % initialise size
     for iShot=1:nShot_this
         % extract captured counts
         zxy_0_captured{idxparam}{iShot}=zxy_0{idxparam}{iShot}(idx_cyl_sect{idxparam}{iShot},:);
+        k_zxy_captured{idxparam}{iShot}=k_zxy{idxparam}{iShot}(idx_cyl_sect{idxparam}{iShot},:);
     end
 end
 
 % Plot - highlight captured counts from the summary point cloud
 % TODO: for param modes >1
 if verbose>1
+    %% Real space ZXY counts
     figure(h_zxy_ff);
     hold on;
     
-    plot_zxy(zxy_0_captured{1},[],30,'r');      % highlight all the counts captured
+    plot_zxy(zxy_0_captured{1},configs.num_count_disp,30,'r');      % highlight all the counts captured
     
     % save plot
     fname_str='zxy_ff';
     saveas(h_zxy_ff,[configs.files.dirout,fname_str,'.png']);
     saveas(h_zxy_ff,[configs.files.dirout,fname_str,'.fig']);
+    
+    %% k-vectors
+    figure(h_k_ff);
+    hold on;
+    
+    plot_zxy(k_zxy_captured{1},configs.num_count_disp,30,'r');      % highlight all the counts captured
+    
+    % save plot
+    fname_str='k_ff';
+    saveas(h_k_ff,[configs.files.dirout,fname_str,'.png']);
+    saveas(h_k_ff,[configs.files.dirout,fname_str,'.fig']);
 end
 
 %% Get 1D-k
@@ -475,7 +521,7 @@ k_fit.QD.lg_nk_fit=feval(k_fit.QD.fit,k_fit.QD.lg_k_fit);  % evaluate fitted mod
 
 % Plot
 figure(h_nk_cyl_1D_log); hold on;
-plot(1e-6*exp(k_fit.QD.lg_k_fit),1e18*exp(k_fit.QD.lg_nk_fit),'k--');
+plot(1e-6*exp(k_fit.QD.lg_k_fit),1e18*exp(k_fit.QD.lg_nk_fit),'k.-','LineWidth',3);
 
 % tight axis
 axis tight;
