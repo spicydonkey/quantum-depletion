@@ -308,7 +308,7 @@ if verbose>1
     figure(h_zxy_ff);
     hold on;
     
-    plot_zxy(zxy_0_captured{1},configs.num_count_disp,30,'r');      % highlight all the counts captured
+    plot_zxy(zxy_0_captured{1},configs.num_count_disp_more,30,'r');      % highlight all the counts captured
     
     % save plot
     fname_str='zxy_ff';
@@ -319,7 +319,7 @@ if verbose>1
     figure(h_k_ff);
     hold on;
     
-    plot_zxy(k_zxy_captured{1},configs.num_count_disp,30,'r');      % highlight all the counts captured
+    plot_zxy(k_zxy_captured{1},configs.num_count_disp_more,30,'r');      % highlight all the counts captured
     
     % save plot
     fname_str='k_ff';
@@ -487,10 +487,23 @@ end
 k=hist_k_cyl_1D.binCent{1};     % k-bin centres (exp-spaced)
 nk=nk_sm{1};            % evaluated density at k-point
 
+% moving standard deviation
+n_sm_movingstd=3;       % TODO: this is really strange...
+nk_std=movingstd(nk,n_sm_movingstd,'central');  % smoothing standard deviation
+nk_se=nk_std/sqrt(n_sm_movingstd);
+
+% %% Plot smoothed density profile
+% if verbose>0
+%     figure(h_nk_cyl_1D_log);
+%     ax_nk_shaded=shadedErrorBar(1e-6*k,1e18*nk,1e18*nk_se,'-k',1);
+% %     
+% %     % legend
+% %     ax_nk_shaded.mainLine.DisplayName='Smoothed data';
+% end
 
 %% Fit density profile
 % common
-ratio_extrap=1;
+ratio_extrap=1.5;
 
 % get fitting region
 % [~,I_qd]=min(abs(k-configs.fit.k_min));  % get index from which to fit QD neg-power law
@@ -516,15 +529,19 @@ k_fit.QD.fit=fitnlm(k_fit.QD.lg_k,k_fit.QD.lg_nk,...
 disp(k_fit.QD.fit);
 
 % build a sample of the fitted model's profile
-k_fit.QD.lg_k_fit=linspace((min(k_fit.QD.lg_k)),max(k_fit.QD.lg_k),1000);   % indep var to evaluate fitted function
+k_fit.QD.lg_k_fit=linspace((min(k_fit.QD.lg_k))-log(ratio_extrap),...
+    max(k_fit.QD.lg_k)+log(ratio_extrap),1000);   % indep var to evaluate fitted function
 k_fit.QD.lg_nk_fit=feval(k_fit.QD.fit,k_fit.QD.lg_k_fit);  % evaluate fitted model
 
 % Plot
 figure(h_nk_cyl_1D_log); hold on;
-plot(1e-6*exp(k_fit.QD.lg_k_fit),1e18*exp(k_fit.QD.lg_nk_fit),'k.-','LineWidth',3);
+plot(1e-6*exp(k_fit.QD.lg_k_fit),1e18*exp(k_fit.QD.lg_nk_fit),...
+    '--','LineWidth',2,'DisplayName','Quantum depletion fit');
 
-% tight axis
+% update plot
 axis tight;
+legend(gca,'off')
+legend(gca,'show');
 
 % Save plot
 fname_str='nk_cyl_fit';
