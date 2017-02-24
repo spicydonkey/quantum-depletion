@@ -493,28 +493,73 @@ nk_se=nk_std/sqrt(n_sm_movingstd);
 % %     ax_nk_shaded.mainLine.DisplayName='Smoothed data';
 % end
 
-%% Fit density profile
-% common
+%% FIT THERMAL DEPLETION density profile
+% FIT COMMON
 ratio_extrap=1.5;
 
 % get fitting region
-% [~,I_qd]=min(abs(k-configs.fit.k_min));  % get index from which to fit QD neg-power law
-I_qd=zeros(1,2);        % [min,max] index lims
+I_th=zeros(1,2);        % [min,max] index lims
 for idx=1:2    
-    [~,I_qd(idx)]=min(abs(k-configs.fit.k_lim(idx)));   % get indices to closest k-cent bin
+    [~,I_th(idx)]=min(abs(k-configs.fit.thermal.k_lim(idx)));   % get indices to closest k-cent bin
 end
 
 % get fitting data
-% k_fit.QD.lg_k=log(k(I_qd:end));
-% k_fit.QD.lg_nk=log(nk(I_qd:end));
+k_fit.thermal.k=k(I_th(1):I_th(2));
+k_fit.thermal.nk=nk(I_th(1):I_th(2));
+
+% call fitting routine
+k_fit.thermal.fit=fitnlm(k_fit.thermal.k,k_fit.thermal.nk,...
+    configs.fit.thermal.fun,configs.fit.thermal.param0,...
+    'CoefficientNames',configs.fit.thermal.coefname,...
+    'Options',configs.fit.thermal.opt);
+
+% Summarise fit
+disp(k_fit.thermal.fit);
+
+% build a sample of the fitted model's profile
+k_fit.thermal.k_fit=linspace(min(k_fit.thermal.k)/ratio_extrap,...
+    max(k_fit.thermal.k)*ratio_extrap,1000);   % indep var to evaluate fitted function
+k_fit.thermal.nk_fit=feval(k_fit.thermal.fit,k_fit.thermal.k_fit);  % evaluate fitted model
+
+% Plot
+figure(h_nk_cyl_1D_log); hold on;
+plot(1e-6*k_fit.thermal.k_fit,1e18*k_fit.thermal.nk_fit,...
+    ':','LineWidth',2,'DisplayName','Thermal depletion fit');
+
+% update plot
+axis tight;
+legend(gca,'off')
+legend(gca,'show');
+
+% Patch fitting region
+ax_this=gca;
+ylim_region=ax_this.YLim;               % Y-lim to axis lims
+xlim_region=1e-6*configs.fit.thermal.k_lim;     % X-lim to fitting region
+
+vert_region=[xlim_region flip(xlim_region);ylim_region(1) ylim_region(1) ylim_region(2) ylim_region(2)]';
+face_region=1:4;
+
+h_patch_region=patch('Faces',face_region,'Vertices',vert_region,...
+    'FaceColor','red','EdgeColor','none','FaceAlpha',0.1);
+uistack(h_patch_region,'bottom');   % send patch object to bottom
+
+
+%% FIT QUANTUM DEPLETION density profile
+% get fitting region
+I_qd=zeros(1,2);        % [min,max] index lims
+for idx=1:2    
+    [~,I_qd(idx)]=min(abs(k-configs.fit.qd.k_lim(idx)));   % get indices to closest k-cent bin
+end
+
+% get fitting data
 k_fit.QD.lg_k=log(k(I_qd(1):I_qd(2)));
 k_fit.QD.lg_nk=log(nk(I_qd(1):I_qd(2)));
 
 % call fitting routine
 k_fit.QD.fit=fitnlm(k_fit.QD.lg_k,k_fit.QD.lg_nk,...
-    configs.fit.fun_negpowk,configs.fit.param0,...
-    'CoefficientNames',configs.fit.fun_coefname,...
-    'Options',configs.fit.opt);
+    configs.fit.qd.fun,configs.fit.qd.param0,...
+    'CoefficientNames',configs.fit.qd.coefname,...
+    'Options',configs.fit.qd.opt);
 
 % Summarise fit
 disp(k_fit.QD.fit);
@@ -537,7 +582,7 @@ legend(gca,'show');
 % Patch fitting region
 ax_this=gca;
 ylim_region=ax_this.YLim;               % Y-lim to axis lims
-xlim_region=1e-6*configs.fit.k_lim;     % X-lim to fitting region
+xlim_region=1e-6*configs.fit.qd.k_lim;     % X-lim to fitting region
 
 vert_region=[xlim_region flip(xlim_region);ylim_region(1) ylim_region(1) ylim_region(2) ylim_region(2)]';
 face_region=1:4;

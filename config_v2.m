@@ -11,8 +11,8 @@ verbose=2;
 
 %%% Raw data handling
 % files -  data file
-configs.files.path='C:\Users\HE BEC\Documents\lab\quantum-depletion\exp6\d';    % path to unindexed data file (e.g. 'a\b\datadir\$DATA_FNAME_TOKEN$')
-configs.files.id=1:2696;          % file id numbers to use for analysis
+configs.files.path='C:\Users\HE BEC\Documents\lab\quantum-depletion\exp7\d';    % path to unindexed data file (e.g. 'a\b\datadir\$DATA_FNAME_TOKEN$')
+configs.files.id=1:1000;          % file id numbers to use for analysis
 configs.files.minCount=1000;     % min counts to use for analysis
 
 
@@ -45,13 +45,14 @@ configs.num_count_disp_more=1e6;
 
 %% Quantum depletion specific
 %%% Angular integration over radial profile - Cylindrical sector
-configs.cylsect_dtheta=deg2rad(15);
+configs.cylsect_dtheta=deg2rad(60);
 configs.cylsect_theta_lims=pi+configs.cylsect_dtheta*[-0.5,0.5];    % in-radial plane angle lims for angular averaging
+% configs.cylsect_theta_lims=configs.cylsect_dtheta*[-0.5,0.5];    % below condensate!
 configs.cylsect_trans_hwidth=k2r(0.8e6);          % transverse averaging half width [m]
 
 
 %% Histogramming
-configs.hist.ed_lgk=logspace(log10(0.3e6),log10(20e6),100);   % 10^X [m^-1 == 1e-6 um^-1]
+configs.hist.ed_lgk=logspace(log10(0.3e6),log10(20e6),50);   % 10^X [m^-1 == 1e-6 um^-1]
 
 % DEBUG FOR FLAT BACKGROUND
 do_flat=0;
@@ -65,14 +66,15 @@ configs.smooth.nspan=5;
 
 %%% Thermal depletion
 % fitting region
-configs.fit.k_lim_thermal=[2.5e6 6e6];      % bound k to use for fit [m^-1]
+configs.fit.thermal.k_lim=[2e6 4e6];      % bound k to use for fit [m^-1]
 % fitting function
-configs.fit.fun_thermal='y~Nth*polylog2(3/2,exp(-6.0597e-20*(x1^2)/Ta))/(4.4870e-29*(Ta^(3/2)))';    % negative-power function
-configs.fit.fun_coefname_thermal={'Nth','Ta'};         % function coefficient names
+% configs.fit.thermal.fun='y~Nth*g_bose(exp(-6.0597e-20*(x1^2)/Ta))/(4.4870e-29*(Ta^(3/2)))';    % negative-power function
+configs.fit.thermal.fun=@bose_dist;    % negative-power function
+configs.fit.thermal.coefname={'Nth','Ta'};         % function coefficient names
 % initial conditions
-configs.fit.param0_thermal=[1e3,1e-8];   % (A, alpha)
+configs.fit.thermal.param0=[1e3,1e-8];   % (A, alpha)
 % fit options
-configs.fit.opt_thermal=statset('TolFun',1e-15,...
+configs.fit.thermal.opt=statset('TolFun',1e-15,...
     'TolX',1e-15,...
     'MaxIter',1e6,...
     'UseParallel',1,...
@@ -80,19 +82,19 @@ configs.fit.opt_thermal=statset('TolFun',1e-15,...
 
 %%% Quantum depletion - loglog transformed linear
 % fitting region
-configs.fit.k_lim=[6e6 15e6];      % k-region of data to fit
+configs.fit.qd.k_lim=[3.3e6 6e6];      % k-region of data to fit
 
 % fitting function and init conditions
 % configs.fit.fun_negpowk='y~A-alpha*x1';     % linearised fitting function
 % configs.fit.fun_coefname={'A','alpha'};    	% function coefficient names
 % configs.fit.param0=[10,4.0];   % (A, alpha)
 
-configs.fit.fun_negpowk='y~log(C_inf/248.0502)-alpha*x1';     % linearised fitting function
-configs.fit.fun_coefname={'C_inf','alpha'};    	% function coefficient names
-configs.fit.param0=[(2*pi)^3*exp(10),4.0];  % (C_inf, alpha)
+configs.fit.qd.fun='y~log(C_inf/248.0502)-alpha*x1';     % linearised fitting function
+configs.fit.qd.coefname={'C_inf','alpha'};    	% function coefficient names
+configs.fit.qd.param0=[(2*pi)^3*exp(10),4.0];  % (C_inf, alpha)
 
 % fit options
-configs.fit.opt=statset('TolFun',1e-30,...
+configs.fit.qd.opt=statset('TolFun',1e-30,...
     'TolX',1e-30,...
     'MaxIter',1e8,...
     'UseParallel',1,...
