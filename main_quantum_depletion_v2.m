@@ -4,7 +4,7 @@
 clear all; close all; clc;
 
 %%% USER INPUTS
-path_config='C:\Users\HE BEC\Documents\MATLAB\quantum-depletion\config_v2.m';
+path_config='C:\Users\David\Documents\MATLAB\quantum-depletion\config_v2.m';
 
 % note: getting param id from logfile is not implemented yet
 % path_param_log='C:\Users\HE BEC\Documents\lab\quantum-depletion\exp5\log_test.txt';   
@@ -480,9 +480,9 @@ k=hist_k_cyl_1D.binCent{1};     % k-bin centres (exp-spaced)
 nk=nk_sm{1};            % evaluated density at k-point
 
 % moving standard deviation
-n_sm_movingstd=3;       % TODO: this is really strange...
-nk_std=movingstd(nk,n_sm_movingstd,'central');  % smoothing standard deviation
-nk_se=nk_std/sqrt(n_sm_movingstd);
+% n_sm_movingstd=3;       % TODO: this is really strange...
+% nk_std=movingstd(nk,n_sm_movingstd,'central');  % smoothing standard deviation
+% nk_se=nk_std/sqrt(n_sm_movingstd);
 
 % %% Plot smoothed density profile
 % if verbose>0
@@ -494,9 +494,7 @@ nk_se=nk_std/sqrt(n_sm_movingstd);
 % end
 
 %% FIT THERMAL DEPLETION density profile
-% FIT COMMON
-ratio_extrap=1.5;
-
+%%%%%%%%%%% LOGARITHMIC
 % get fitting region
 I_th=zeros(1,2);        % [min,max] index lims
 for idx=1:2    
@@ -505,10 +503,10 @@ end
 
 % get fitting data
 k_fit.thermal.k=k(I_th(1):I_th(2));
-k_fit.thermal.nk=nk(I_th(1):I_th(2));
+k_fit.thermal.lg_nk=log(nk(I_th(1):I_th(2)));
 
 % call fitting routine
-k_fit.thermal.fit=fitnlm(k_fit.thermal.k,k_fit.thermal.nk,...
+k_fit.thermal.fit=fitnlm(k_fit.thermal.k,k_fit.thermal.lg_nk,...
     configs.fit.thermal.fun,configs.fit.thermal.param0,...
     'CoefficientNames',configs.fit.thermal.coefname,...
     'Options',configs.fit.thermal.opt);
@@ -517,14 +515,47 @@ k_fit.thermal.fit=fitnlm(k_fit.thermal.k,k_fit.thermal.nk,...
 disp(k_fit.thermal.fit);
 
 % build a sample of the fitted model's profile
-k_fit.thermal.k_fit=linspace(min(k_fit.thermal.k)/ratio_extrap,...
-    max(k_fit.thermal.k)*ratio_extrap,1000);   % indep var to evaluate fitted function
-k_fit.thermal.nk_fit=feval(k_fit.thermal.fit,k_fit.thermal.k_fit);  % evaluate fitted model
+extrap_temp=configs.fit.thermal.extrap;
+k_fit.thermal.k_fit=linspace(min(k_fit.thermal.k)/extrap_temp,...
+    max(k_fit.thermal.k)*extrap_temp,1000);   % indep var to evaluate fitted function
+k_fit.thermal.lg_nk_fit=feval(k_fit.thermal.fit,k_fit.thermal.k_fit);  % evaluate fitted model
 
 % Plot
 figure(h_nk_cyl_1D_log); hold on;
-plot(1e-6*k_fit.thermal.k_fit,1e18*k_fit.thermal.nk_fit,...
+plot(1e-6*k_fit.thermal.k_fit,1e18*exp(k_fit.thermal.lg_nk_fit),...
     ':','LineWidth',2,'DisplayName','Thermal depletion fit');
+
+% %%%%%%%%%%% LINEAR
+% % get fitting region
+% I_th=zeros(1,2);        % [min,max] index lims
+% for idx=1:2    
+%     [~,I_th(idx)]=min(abs(k-configs.fit.thermal.k_lim(idx)));   % get indices to closest k-cent bin
+% end
+% 
+% % get fitting data
+% k_fit.thermal.k=k(I_th(1):I_th(2));
+% k_fit.thermal.nk=nk(I_th(1):I_th(2));
+% 
+% % call fitting routine
+% k_fit.thermal.fit=fitnlm(k_fit.thermal.k,k_fit.thermal.nk,...
+%     configs.fit.thermal.fun,configs.fit.thermal.param0,...
+%     'CoefficientNames',configs.fit.thermal.coefname,...
+%     'Options',configs.fit.thermal.opt);
+% 
+% % Summarise fit
+% disp(k_fit.thermal.fit);
+% 
+% % build a sample of the fitted model's profile
+% extrap_temp=configs.fit.thermal.extrap;
+% k_fit.thermal.k_fit=linspace(min(k_fit.thermal.k)/ratio_extrap,...
+%     max(k_fit.thermal.k)*ratio_extrap,1000);   % indep var to evaluate fitted function
+% k_fit.thermal.nk_fit=feval(k_fit.thermal.fit,k_fit.thermal.k_fit);  % evaluate fitted model
+% 
+% % Plot
+% figure(h_nk_cyl_1D_log); hold on;
+% plot(1e-6*k_fit.thermal.k_fit,1e18*k_fit.thermal.nk_fit,...
+%     ':','LineWidth',2,'DisplayName','Thermal depletion fit');
+
 
 % update plot
 axis tight;
@@ -565,8 +596,9 @@ k_fit.QD.fit=fitnlm(k_fit.QD.lg_k,k_fit.QD.lg_nk,...
 disp(k_fit.QD.fit);
 
 % build a sample of the fitted model's profile
-k_fit.QD.lg_k_fit=linspace((min(k_fit.QD.lg_k))-log(ratio_extrap),...
-    max(k_fit.QD.lg_k)+log(ratio_extrap),1000);   % indep var to evaluate fitted function
+extrap_temp=configs.fit.qd.extrap;
+k_fit.QD.lg_k_fit=linspace((min(k_fit.QD.lg_k))-log(extrap_temp),...
+    max(k_fit.QD.lg_k)+log(extrap_temp),1000);   % indep var to evaluate fitted function
 k_fit.QD.lg_nk_fit=feval(k_fit.QD.fit,k_fit.QD.lg_k_fit);  % evaluate fitted model
 
 % Plot

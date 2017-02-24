@@ -7,13 +7,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%% GENERAL
-verbose=2;
+verbose=1;
 
 %%% Raw data handling
 % files -  data file
-configs.files.path='C:\Users\HE BEC\Documents\lab\quantum-depletion\exp7\d';    % path to unindexed data file (e.g. 'a\b\datadir\$DATA_FNAME_TOKEN$')
-configs.files.id=1:1000;          % file id numbers to use for analysis
-configs.files.minCount=1000;     % min counts to use for analysis
+configs.files.path='C:\Users\David\Documents\hebec\quantum-depletion\run5\d';    % path to unindexed data file (e.g. 'a\b\datadir\$DATA_FNAME_TOKEN$')
+configs.files.id=1:400;          % file id numbers to use for analysis
+configs.files.minCount=0;     % min counts to use for analysis
 
 
 % XY plane rotation to align to trap geometry
@@ -27,7 +27,7 @@ configs.window{2}=[-45e-3,40e-3];    % X [m]
 configs.window{3}=[-50e-3,38e-3];    % Y [m]
 
 % Param set
-configs.paramset=1;     % TODO: number of params iterated - too specific
+configs.paramset=2;     % TODO: number of params iterated - too specific
 
 % BEC locator - used for accurate location of condensate
 configs.bec.txy_pos=[0.5715,-3.45e-3,-10e-3];       % approx bec location (get from DLD front panel)
@@ -41,7 +41,7 @@ configs.const.tof=0.416;    % TOF for free-fall from trap to DLD
 
 % TODO - this is a duplicate - needs to be merged
 configs.num_count_disp=1e5;
-configs.num_count_disp_more=1e6;
+configs.num_count_disp_more=1e5;
 
 %% Quantum depletion specific
 %%% Angular integration over radial profile - Cylindrical sector
@@ -62,36 +62,54 @@ do_flat=0;
 configs.smooth.nspan=5;
 
 %% Fit to large-k tail
-% Polylog function for non-integer order: polylog2
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Thermal depletion
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fitting region
-configs.fit.thermal.k_lim=[2e6 4e6];      % bound k to use for fit [m^-1]
+configs.fit.thermal.k_lim=[2.5e6 6e6];      % bound k to use for fit [m^-1]
+configs.fit.thermal.extrap=1.3;     % ratio of extrapolation
+
+%%%%%%% LINEAR
+% % fitting function
+% configs.fit.thermal.fun=@bose_dist;
+% configs.fit.thermal.coefname={'Nth','Ta'};         % function coefficient names
+% configs.fit.thermal.param0=[1e5,100e-9];   % (Nthermal,Tapparent)
+% % fit options
+% configs.fit.thermal.opt=statset('TolFun',1e-80,...
+%     'TolX',1e-80,...
+%     'MaxIter',1e15,...
+%     'UseParallel',1,...
+%     'Display','off');
+
+%%%%%%% LOGARITHMIC - robust
 % fitting function
-% configs.fit.thermal.fun='y~Nth*g_bose(exp(-6.0597e-20*(x1^2)/Ta))/(4.4870e-29*(Ta^(3/2)))';    % negative-power function
-configs.fit.thermal.fun=@bose_dist;    % negative-power function
+configs.fit.thermal.fun=@log_bose_dist;
 configs.fit.thermal.coefname={'Nth','Ta'};         % function coefficient names
-% initial conditions
-configs.fit.thermal.param0=[1e3,1e-8];   % (A, alpha)
+configs.fit.thermal.param0=[1e4,300e-9];
+
 % fit options
-configs.fit.thermal.opt=statset('TolFun',1e-15,...
-    'TolX',1e-15,...
-    'MaxIter',1e6,...
+configs.fit.thermal.opt=statset('TolFun',1e-80,...
+    'TolX',1e-80,...
+    'MaxIter',1e15,...
     'UseParallel',1,...
     'Display','off');
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Quantum depletion - loglog transformed linear
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fitting region
-configs.fit.qd.k_lim=[3.3e6 6e6];      % k-region of data to fit
+configs.fit.qd.k_lim=[6e6 9e6];      % k-region of data to fit
+configs.fit.qd.extrap=1.5;
 
 % fitting function and init conditions
-% configs.fit.fun_negpowk='y~A-alpha*x1';     % linearised fitting function
-% configs.fit.fun_coefname={'A','alpha'};    	% function coefficient names
-% configs.fit.param0=[10,4.0];   % (A, alpha)
+configs.fit.qd.fun='y~A-alpha*x1';     % linearised fitting function
+configs.fit.qd.coefname={'A','alpha'};    	% function coefficient names
+configs.fit.qd.param0=[10,4.0];   % (A, alpha)
 
-configs.fit.qd.fun='y~log(C_inf/248.0502)-alpha*x1';     % linearised fitting function
-configs.fit.qd.coefname={'C_inf','alpha'};    	% function coefficient names
-configs.fit.qd.param0=[(2*pi)^3*exp(10),4.0];  % (C_inf, alpha)
+%%% Below method is not as robust as completely linear eqn above
+% configs.fit.qd.fun='y~log(C_inf/248.0502)-alpha*x1';     % linearised fitting function
+% configs.fit.qd.coefname={'C_inf','alpha'};    	% function coefficient names
+% configs.fit.qd.param0=[(2*pi)^3*exp(15),5.0];  % (C_inf, alpha)
 
 % fit options
 configs.fit.qd.opt=statset('TolFun',1e-30,...
