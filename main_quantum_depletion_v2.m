@@ -4,7 +4,7 @@
 clear all; close all; clc;
 
 %%% USER INPUTS
-path_config='C:\Users\David\Documents\MATLAB\quantum-depletion\config_v2.m';
+path_config='C:\Users\HE BEC\Documents\MATLAB\quantum-depletion\config_v2.m';
 
 % note: getting param id from logfile is not implemented yet
 % path_param_log='C:\Users\HE BEC\Documents\lab\quantum-depletion\exp5\log_test.txt';   
@@ -13,7 +13,6 @@ path_config='C:\Users\David\Documents\MATLAB\quantum-depletion\config_v2.m';
 vars_save={'path_config',...
     'zxy_0','files_out',...
     'k_1D_cyl',...
-    'nk4',...
     'hist_k_cyl_1D','nden_k_cyl_1D',...
     'nk','nk_se'...
     };
@@ -169,10 +168,10 @@ if verbose>1
     view(3);
     axis equal;
     
-    % save plot
-    fname_str='zxy_ff';
-    saveas(h_zxy_ff,[configs.files.dirout,fname_str,'.png']);
-    saveas(h_zxy_ff,[configs.files.dirout,fname_str,'.fig']);
+%     % save plot
+%     fname_str='zxy_ff';
+%     saveas(h_zxy_ff,[configs.files.dirout,fname_str,'.png']);
+%     saveas(h_zxy_ff,[configs.files.dirout,fname_str,'.fig']);
 end
 
 %% Far-field k-vectors
@@ -200,10 +199,10 @@ if verbose>1
     view(3);
     axis equal;
     
-    % save plot
-    fname_str='k_ff';
-    saveas(h_k_ff,[configs.files.dirout,fname_str,'.png']);
-    saveas(h_k_ff,[configs.files.dirout,fname_str,'.fig']);
+%     % save plot
+%     fname_str='k_ff';
+%     saveas(h_k_ff,[configs.files.dirout,fname_str,'.png']);
+%     saveas(h_k_ff,[configs.files.dirout,fname_str,'.fig']);
 end
 
 
@@ -302,10 +301,12 @@ if verbose>1
     
     plot_zxy(zxy_0_captured{1},configs.num_count_disp_more,30,'r');      % highlight all the counts captured
     
-    % save plot
-    fname_str='zxy_ff';
-    saveas(h_zxy_ff,[configs.files.dirout,fname_str,'.png']);
-    saveas(h_zxy_ff,[configs.files.dirout,fname_str,'.fig']);
+    if verbose>2
+        % save plot
+        fname_str='zxy_ff';
+        saveas(h_zxy_ff,[configs.files.dirout,fname_str,'.png']);
+        saveas(h_zxy_ff,[configs.files.dirout,fname_str,'.fig']);
+    end
     
     %% k-vectors
     figure(h_k_ff);
@@ -313,10 +314,12 @@ if verbose>1
     
     plot_zxy(k_zxy_captured{1},configs.num_count_disp_more,30,'r');      % highlight all the counts captured
     
-    % save plot
-    fname_str='k_ff';
-    saveas(h_k_ff,[configs.files.dirout,fname_str,'.png']);
-    saveas(h_k_ff,[configs.files.dirout,fname_str,'.fig']);
+    if verbose>2
+        % save plot
+        fname_str='k_ff';
+        saveas(h_k_ff,[configs.files.dirout,fname_str,'.png']);
+        saveas(h_k_ff,[configs.files.dirout,fname_str,'.fig']);
+    end
 end
 
 %% Get 1D-k
@@ -375,9 +378,9 @@ if verbose>0
     xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('Number in BIN$(k)$');
 %     legend({'RF sweep ON','RF sweep OFF'}); % TODO - modular for param set variability
     
-    fname_str='hist_k1D';
-    saveas(h_k1D_hist,[configs.files.dirout,fname_str,'.png']);
-    saveas(h_k1D_hist,[configs.files.dirout,fname_str,'.fig']);
+%     fname_str='hist_k1D';
+%     saveas(h_k1D_hist,[configs.files.dirout,fname_str,'.png']);
+%     saveas(h_k1D_hist,[configs.files.dirout,fname_str,'.fig']);
 end
 
 %% Display far-field k-space density profile
@@ -407,9 +410,9 @@ if verbose>0
     h_darkcount.Color='r';
     h_darkcount.DisplayName='Dark count';
     
-    fname_str='nk_cyl_1D_loglog';
-    saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'.png']);
-    saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'.fig']);
+%     fname_str='nk_cyl_1D_loglog';
+%     saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'.png']);
+%     saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'.fig']);
 end
 
 % %%% Evaluate nk4
@@ -522,8 +525,11 @@ k_fit.thermal.lg_nk_fit=feval(k_fit.thermal.fit,k_fit.thermal.k_fit);  % evaluat
 
 % Plot
 figure(h_nk_cyl_1D_log); hold on;
+coeffnames=k_fit.thermal.fit.CoefficientNames;
+dispname=sprintf('TD: (%s,%s)=(%0.2g,%0.2g)',...
+    coeffnames{:},k_fit.thermal.fit.Coefficients.Estimate);
 plot(1e-6*k_fit.thermal.k_fit,1e18*exp(k_fit.thermal.lg_nk_fit),...
-    ':','LineWidth',2,'DisplayName','Thermal depletion fit');
+    ':','LineWidth',2,'DisplayName',dispname);
 
 % %%%%%%%%%%% LINEAR
 % % get fitting region
@@ -603,8 +609,11 @@ k_fit.QD.lg_nk_fit=feval(k_fit.QD.fit,k_fit.QD.lg_k_fit);  % evaluate fitted mod
 
 % Plot
 figure(h_nk_cyl_1D_log); hold on;
+coeffnames=k_fit.QD.fit.CoefficientNames;
+dispname=sprintf('QD: (%s,%s)=(%0.2g,%0.2g)',...
+    coeffnames{:},k_fit.QD.fit.Coefficients.Estimate);
 plot(1e-6*exp(k_fit.QD.lg_k_fit),1e18*exp(k_fit.QD.lg_nk_fit),...
-    '--','LineWidth',2,'DisplayName','Quantum depletion fit');
+    '--','LineWidth',2,'DisplayName',dispname);
 
 % update plot
 axis tight;
@@ -623,12 +632,19 @@ h_patch_region=patch('Faces',face_region,'Vertices',vert_region,...
     'FaceColor','blue','EdgeColor','none','FaceAlpha',0.1);
 uistack(h_patch_region,'bottom');   % send patch object to bottom
 
-% Save plot
+%% Save fitted k-density profile
 fname_str='nk_cyl_fit';
+
+h_nk_cyl_1D_log.Units = configs.fig.paperunits;
+h_nk_cyl_1D_log.Position = configs.fig.paperposition;
+
+h_nk_cyl_1D_log.PaperSize = configs.fig.papersize;
+h_nk_cyl_1D_log.PaperUnits = configs.fig.paperunits;
+h_nk_cyl_1D_log.PaperPosition = configs.fig.paperposition;
 
 saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'.png']);
 saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'.fig']);
-
+saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'_',date,'.eps'], 'psc2');     % save fig in cd
 
 %% Save data
 for i = 1:length(vars_save)
