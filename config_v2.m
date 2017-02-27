@@ -46,20 +46,20 @@ configs.num_count_disp_more=1e5;
 %% Quantum depletion specific
 %%% Angular integration over radial profile - Cylindrical sector
 configs.cylsect_dtheta=deg2rad(60);
-configs.cylsect_theta_lims=pi+configs.cylsect_dtheta*[-0.5,0.5];    % in-radial plane angle lims for angular averaging
-% configs.cylsect_theta_lims=configs.cylsect_dtheta*[-0.5,0.5];    % below condensate!
-configs.cylsect_trans_hwidth=k2r(0.8e6);          % transverse averaging half width [m]
+configs.cylsect_theta0=deg2rad(0);
+configs.cylsect_theta_lims=configs.cylsect_theta0+configs.cylsect_dtheta*[-0.5,0.5];    % in-radial plane angle lims for angular averaging
+configs.cylsect_trans_hwidth=k2r(0.3e6);          % transverse averaging half width [m]
 
 
 %% Histogramming
-configs.hist.ed_lgk=logspace(log10(0.3e6),log10(20e6),200);   % 10^X [m^-1 == 1e-6 um^-1]
+configs.hist.ed_lgk=logspace(log10(0.3e6),log10(20e6),100);   % 10^X [m^-1 == 1e-6 um^-1]
 
 % DEBUG FOR FLAT BACKGROUND
 do_flat=0;
 
 %% Smoothing
 % TODO: understand this better!
-configs.smooth.nspan=3;
+configs.smooth.nspan=5;
 
 %% Fit to large-k tail
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -85,7 +85,7 @@ configs.fit.thermal.extrap=1.3;     % ratio of extrapolation
 % fitting function
 configs.fit.thermal.fun=@log_bose_dist;
 configs.fit.thermal.coefname={'Nth','Ta'};         % function coefficient names
-configs.fit.thermal.param0=[2e3,150e-9];
+configs.fit.thermal.param0=[1.7e3,150e-9];
 
 % fit options
 configs.fit.thermal.opt=statset('TolFun',1e-80,...
@@ -144,7 +144,7 @@ configs.limit.kdensity=[configs.limit.det_dark_nk,configs.limit.det_sat_nk];
 configs.fig.paperunits = 'centimeters';
 
 % sizes
-configs.fig.papersize = [20 20];
+configs.fig.papersize = [25 20];
 configs.fig.paperposition = [0 0 configs.fig.papersize];
 
 
