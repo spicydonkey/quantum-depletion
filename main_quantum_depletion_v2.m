@@ -4,7 +4,7 @@
 clear all; close all; clc;
 
 %%% USER INPUTS
-path_config='C:\Users\HE BEC\Documents\MATLAB\quantum-depletion\config_v2.m';
+path_config='C:\Users\HE BEC\Documents\MATLAB\quantum-depletion\configs\config_run7.m';
 
 % note: getting param id from logfile is not implemented yet
 % path_param_log='C:\Users\HE BEC\Documents\lab\quantum-depletion\exp5\log_test.txt';   
@@ -373,6 +373,7 @@ if verbose>0
     axis tight;
     box on;
     grid on;
+    grid minor;
     
     title('Histogram');
     xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('Number in BIN$(k)$');
@@ -389,26 +390,29 @@ if verbose>0
     figure(h_nk_cyl_1D_log);
     hold on;
     
-    for idxparam=1:configs.paramset
-        plot(1e-6*hist_k_cyl_1D.binCent{idxparam},...
-            1e18*nden_k_cyl_1D{idxparam},'.','MarkerSize',10);     % scale units appropriately
-    end
+%     for idxparam=1:configs.paramset
+%         plot(1e-6*hist_k_cyl_1D.binCent{idxparam},...
+%             1e18*nden_k_cyl_1D{idxparam},'.','MarkerSize',10);     % scale units appropriately
+%     end
 
     set(gca,'xScale','log');
     set(gca,'yScale','log');
     %         xlim(1e6*configs.limit.k_com);
     %         ylim(1e18*configs.limit.kdensity);
-    axis tight;
+%     axis tight;
+    xlim(1e-6*[min(configs.hist.ed_lgk),max(configs.hist.ed_lgk)]);
+    ylim([1e18*configs.limit.det_dark_nk,1e4]);
+    
     grid on;
     box on;
     
-    title('1D condensate momentum profile');
+%     title('1D condensate momentum profile');
     xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('$n_{\infty}(k)$ [$\mu$m$^3$]');
     
-    % plot dark count noise floor (note: must be plotted after setting axis to log scale)
-    h_darkcount=refline([0,1e18*configs.limit.det_dark_nk]);
-    h_darkcount.Color='r';
-    h_darkcount.DisplayName='Dark count';
+%     % plot dark count noise floor (note: must be plotted after setting axis to log scale)
+%     h_darkcount=refline([0,1e18*configs.limit.det_dark_nk]);
+%     h_darkcount.Color='r';
+%     h_darkcount.DisplayName='Dark count';
     
 %     fname_str='nk_cyl_1D_loglog';
 %     saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'.png']);
@@ -453,11 +457,13 @@ for idxparam=1:configs.paramset
     %% Plot
     if verbose>0
         figure(h_k1D_hist);
-        legend_str_this=sprintf('%d gauss smooth [%d]',idxparam,configs.smooth.nspan);
-        plot(1e-6*hist_k_cyl_1D.binCent{idxparam},Nk_sm{idxparam},...
-            '.-','MarkerSize',10,'DisplayName',legend_str_this);
-        legend(gca,'off')
-        legend(gca,'show');
+%         legend_str_this=sprintf('%d gauss smooth [%d]',idxparam,configs.smooth.nspan);
+%         plot(1e-6*hist_k_cyl_1D.binCent{idxparam},Nk_sm{idxparam},...
+%             'o','MarkerSize',10,'DisplayName',legend_str_this);
+%         legend(gca,'off')
+%         legend(gca,'show');
+    plot(1e-6*hist_k_cyl_1D.binCent{idxparam},Nk_sm{idxparam},...
+        'o','MarkerSize',10);
     end
 end
 
@@ -471,10 +477,12 @@ for idxparam=1:configs.paramset
     if verbose>0
         figure(h_nk_cyl_1D_log);
         legend_str_this=sprintf('%d gauss smooth [%d]',idxparam,configs.smooth.nspan);
+%         plot(1e-6*hist_k_cyl_1D.binCent{idxparam},1e18*nk_sm{idxparam},...
+%             '.-','MarkerSize',10,'DisplayName',legend_str_this);
         plot(1e-6*hist_k_cyl_1D.binCent{idxparam},1e18*nk_sm{idxparam},...
-            '.-','MarkerSize',10,'DisplayName',legend_str_this);
-        legend(gca,'off')
-        legend(gca,'show');
+            '-','LineWidth',3,'Color','b');
+%         legend(gca,'off')
+%         legend(gca,'show');
     end
 end
 
@@ -529,8 +537,10 @@ coeffnames=k_fit.thermal.fit.CoefficientNames;
 dispname=sprintf('TD: (%s,%s)=(%0.2g,%0.2g)\n SE(%0.1g,%0.1g)',...
     coeffnames{:},k_fit.thermal.fit.Coefficients.Estimate,...
     k_fit.thermal.fit.Coefficients.SE);
+% plot(1e-6*k_fit.thermal.k_fit,1e18*exp(k_fit.thermal.lg_nk_fit),...
+%     ':','LineWidth',2,'DisplayName',dispname);
 plot(1e-6*k_fit.thermal.k_fit,1e18*exp(k_fit.thermal.lg_nk_fit),...
-    ':','LineWidth',2,'DisplayName',dispname);
+    ':','LineWidth',2,'Color','k');
 
 % %%%%%%%%%%% LINEAR
 % % get fitting region
@@ -565,9 +575,9 @@ plot(1e-6*k_fit.thermal.k_fit,1e18*exp(k_fit.thermal.lg_nk_fit),...
 
 
 % update plot
-axis tight;
-legend(gca,'off')
-legend(gca,'show');
+% axis tight;
+% legend(gca,'off')
+% legend(gca,'show');
 
 % Patch fitting region
 ax_this=gca;
@@ -614,13 +624,15 @@ coeffnames=k_fit.QD.fit.CoefficientNames;
 dispname=sprintf('QD: (%s,%s)=(%0.2g,%0.2g)\n SE(%0.1g,%0.1g)',...
     coeffnames{:},k_fit.QD.fit.Coefficients.Estimate,...
     k_fit.QD.fit.Coefficients.SE);
+% plot(1e-6*exp(k_fit.QD.lg_k_fit),1e18*exp(k_fit.QD.lg_nk_fit),...
+%     '--','LineWidth',2,'DisplayName',dispname);
 plot(1e-6*exp(k_fit.QD.lg_k_fit),1e18*exp(k_fit.QD.lg_nk_fit),...
-    '--','LineWidth',2,'DisplayName',dispname);
+    '--','LineWidth',2,'Color','k');
 
 % update plot
-axis tight;
-legend(gca,'off')
-legend(gca,'show');
+% axis tight;
+% legend(gca,'off')
+% legend(gca,'show');
 
 % Patch fitting region
 ax_this=gca;
@@ -634,19 +646,27 @@ h_patch_region=patch('Faces',face_region,'Vertices',vert_region,...
     'FaceColor','blue','EdgeColor','none','FaceAlpha',0.1);
 uistack(h_patch_region,'bottom');   % send patch object to bottom
 
+grid minor;
+ax=gca;
+ax.FontSize=13;
+ax.PlotBoxAspectRatio=[1,0.85,1];
+ax.TickLength=2*[0.01,0.01];
+
+
 %% Save fitted k-density profile
-fname_str='nk_cyl_fit';
+fname_str='k_profile';
 
-h_nk_cyl_1D_log.Units = configs.fig.paperunits;
-h_nk_cyl_1D_log.Position = configs.fig.paperposition;
+% h_nk_cyl_1D_log.Units = configs.fig.paperunits;
+% h_nk_cyl_1D_log.Position = configs.fig.paperposition;
+% 
+% h_nk_cyl_1D_log.PaperSize = configs.fig.papersize;
+% h_nk_cyl_1D_log.PaperUnits = configs.fig.paperunits;
+% h_nk_cyl_1D_log.PaperPosition = configs.fig.paperposition;
 
-h_nk_cyl_1D_log.PaperSize = configs.fig.papersize;
-h_nk_cyl_1D_log.PaperUnits = configs.fig.paperunits;
-h_nk_cyl_1D_log.PaperPosition = configs.fig.paperposition;
-
-saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'.png']);
-saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'.fig']);
-saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'_',date,'.eps'], 'psc2');     % save fig in cd
+% saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'.png']);
+% saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'.fig']);
+% saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'_',date,'.eps'], 'psc2');     % save fig in cd
+print(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'_',date],'-dsvg');
 
 %% Save data
 for i = 1:length(vars_save)
