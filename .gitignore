@@ -1,1 +1,21 @@
+# Data
+*.dat*
+*.zip*
+
+# Unix tools
+*.swp*
+
+# Log
+*.log
+
+# Output
+*.avi*
+*.jpg*
+*.pdf*
+*.eps*
+*.png*
+
+# Matlab
 *.asv
+*.mat*
+*.fig*
