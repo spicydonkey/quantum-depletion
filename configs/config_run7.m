@@ -11,7 +11,7 @@ verbose=2;
 
 %%% Raw data handling
 % files -  data file
-configs.files.path='C:\Users\HE BEC\Documents\lab\quantum-depletion\exp7\d';    % path to unindexed data file (e.g. 'a\b\datadir\$DATA_FNAME_TOKEN$')
+configs.files.path='C:\Users\HE BEC\Documents\lab\quantum-depletion\exp7\d';    % path to unindexed data file (e.g. '$DATA_DIR\$DATA_FNAME_TOKEN'. NOTE we commonly use `d` as data file name prefix)
 configs.files.id=1:4346;          % file id numbers to use for analysis
 configs.files.minCount=1000;     % min counts to use for analysis
 

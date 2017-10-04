@@ -3,11 +3,21 @@
 
 clear all; close all; clc;
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% USER INPUTS
-path_config='C:\Users\HE BEC\Documents\MATLAB\quantum-depletion\configs\config_run7.m';
+fname_config='config_run7.m';       % name of config file to use (located in $QD_REPO/configs)
 
-% note: getting param id from logfile is not implemented yet
+% path_config='C:\Users\HE BEC\Documents\MATLAB\quantum-depletion\configs\config_run7.m';
+
+% NOTE: getting param id from logfile is not implemented yet
 % path_param_log='C:\Users\HE BEC\Documents\lab\quantum-depletion\exp5\log_test.txt';   
+
+%%% END OF USER INPUTS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% build paths
+thispath=fileparts(mfilename('fullpath'));      % get directory to current codebase
+path_config=fullfile(thispath,'configs',fname_config);  % build path to config file
 
 % vars to save to output
 vars_save={'path_config',...
