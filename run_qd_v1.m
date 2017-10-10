@@ -20,7 +20,7 @@ thispath=fileparts(mfilename('fullpath'));      % get directory to current codeb
 path_config=fullfile(thispath,'configs',fname_config);  % build path to config file
 
 % vars to save to output
-vars_save={'path_config',...
+vars_save={'configs','path_config',...
     'zxy_0','files_out',...
     'k_1D_cyl',...
     'hist_k_cyl_1D','nden_k_cyl_1D',...
@@ -679,13 +679,24 @@ fname_str='k_profile';
 print(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'_',date],'-dsvg');
 
 %% Save data
+% TODO - package this into a function
+% TODO - if datafile already exists, MOVE it
+
+% parse list of vars user wants to save and check against workspace if exists
+varsExist=cell(size(vars_save));
+varCounter=0;
 for i = 1:length(vars_save)
-    if ~exist(vars_save{i},'var')
-        warning(['Variable "',vars_save{i},'" does not exist.']);
+    tVar=vars_save{i};
+    if ~exist(tVar,'var')
+        warning(['Variable "',tVar,'" does not exist.']);
         continue;
-    end
-    save(configs.files.saveddata,vars_save{i},'-append');     % to overcome version conflict
+    end 
+    varCounter=varCounter+1;
+    varsExist{varCounter}=tVar;
 end
+varsExist=varsExist(1:varCounter);
+
+save(configs.files.saveddata,varsExist{:});
 
 %% END
 t_main_end=toc(t_main_start);
