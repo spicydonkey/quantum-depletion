@@ -5,7 +5,7 @@ clear all; close all; clc;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% USER INPUTS
-fname_config='config_run7.m';       % name of config file to use (located in $QD_REPO/configs)
+fname_config='config_run6.m';       % name of config file to use (located in $QD_REPO/configs)
 
 % path_config='C:\Users\HE BEC\Documents\MATLAB\quantum-depletion\configs\config_run7.m';
 
@@ -353,6 +353,9 @@ for idxparam=1:configs.paramset
     
     % evaluate number density
     nden_k_cyl_1D{idxparam}=(hist_k_cyl_1D.N{idxparam})./(nShot_this*detQE*dk_cyl_volume{idxparam});  % normalised for: shot, QE, phase space volume
+    
+    % TODO - normalise for RF outcoupling efficiency
+    nden_k_cyl_1D{idxparam}=nden_k_cyl_1D{idxparam}/configs.rf_frac;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -411,8 +414,9 @@ if verbose>0
     %         ylim(1e18*configs.limit.kdensity);
 %     axis tight;
     xlim(1e-6*[min(configs.hist.ed_lgk),max(configs.hist.ed_lgk)]);
-    ylim([1e18*configs.limit.det_dark_nk,1e4]);
-    
+%     ylim([1e18*configs.limit.det_dark_nk,1e4]);
+    ylim([1e-2,1e5]);
+
     grid on;
     box on;
     
@@ -482,7 +486,9 @@ nk_sm=cell(configs.paramset,1);     % smoothed k-density
 for idxparam=1:configs.paramset
     nShot_this=size(zxy_0{idxparam},1);
     nk_sm{idxparam}=Nk_sm{idxparam}./(nShot_this*detQE*dk_cyl_volume{idxparam});  % normalised for: shot, QE, phase space volume
-
+    % normalise for RF outcoupling efficiency
+    nk_sm{idxparam}=nk_sm{idxparam}/configs.rf_frac;
+    
     % Plot
     if verbose>0
         figure(h_nk_cyl_1D_log);
@@ -677,6 +683,13 @@ fname_str='k_profile';
 % saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'.fig']);
 % saveas(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'_',date,'.eps'], 'psc2');     % save fig in cd
 print(h_nk_cyl_1D_log,[configs.files.dirout,fname_str,'_',date],'-dsvg');
+
+
+%% Report some findings
+nShotCounts=shotSize(zxy_0{1})/(configs.rf_frac*configs.const.detect_qe);
+N0_pred=[mean(nShotCounts),std(nShotCounts)];
+fprintf('N0 =  %0.2g ± %0.2g\n',N0_pred(1),N0_pred(2));
+
 
 %% Save data
 % TODO - package this into a function

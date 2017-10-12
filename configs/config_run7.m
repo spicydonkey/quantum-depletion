@@ -38,7 +38,7 @@ configs.bec.txy_pos=[0.5715,-3.45e-3,-10e-3];       % approx bec location (get f
 configs.bec.box_fwidth=[15e-3,20e-3,40e-3];     % txy full-width for box capt (be liberal-takes mean)
 
 %%% Experimental consts 
-configs.const.detect_qe=0.1;      % detector quantum efficiency
+configs.const.detect_qe=0.08;      % detector quantum efficiency
 configs.const.hbar=1.05457e-34;     % hbar [m^2kg/s]
 configs.const.m_He=6.646476e-27;    % mass of helium (kg)
 configs.const.tof=0.416;    % TOF for free-fall from trap to DLD
@@ -54,6 +54,7 @@ configs.cylsect_theta0=deg2rad(180);
 configs.cylsect_theta_lims=configs.cylsect_theta0+configs.cylsect_dtheta*[-0.5,0.5];    % in-radial plane angle lims for angular averaging
 configs.cylsect_trans_hwidth=k2r(0.8e6);          % transverse averaging half width [m]
 
+configs.rf_frac=0.42;
 
 %% Histogramming
 configs.hist.ed_lgk=logspace(log10(0.3e6),log10(10e6),100);   % 10^X [m^-1 == 1e-6 um^-1]
@@ -89,7 +90,7 @@ configs.fit.thermal.extrap=1.3;     % ratio of extrapolation
 % fitting function
 configs.fit.thermal.fun=@log_bose_dist;
 configs.fit.thermal.coefname={'Nth','Ta'};         % function coefficient names
-configs.fit.thermal.param0=[1.7e3,150e-9];
+configs.fit.thermal.param0=[5e3,150e-9];
 
 % fit options
 configs.fit.thermal.opt=statset('TolFun',1e-80,...
@@ -108,7 +109,7 @@ configs.fit.qd.extrap=1.5;
 % fitting function and init conditions
 configs.fit.qd.fun='y~A-alpha*x1';     % linearised fitting function
 configs.fit.qd.coefname={'A','alpha'};    	% function coefficient names
-configs.fit.qd.param0=[10,4.0];   % (A, alpha)
+configs.fit.qd.param0=[20,4.0];   % (A, alpha)
 
 %%% Below method is not as robust as completely linear eqn above
 % configs.fit.qd.fun='y~log(C_inf/248.0502)-alpha*x1';     % linearised fitting function
