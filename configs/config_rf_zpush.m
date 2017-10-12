@@ -12,4 +12,14 @@ configs.load.window{3}=[-35e-3,35e-3];    % Y [m]
 
 % define region for outcoupled atom (mf=0)
 vz=9.81*0.416;
-boxLim={[0.51,0.525]*vz,[-35e-3,35e-3],[-35e-3,35e-3]};
+
+% box regions for triplets
+% IDX   |   MF
+%-------+----------
+% 1     |   1
+% 2     |   0
+% 3     |   -1
+mf=[1,0,-1];
+boxLim{1}={[0.48,0.51]*vz,[-35e-3,35e-3],[-35e-3,35e-3]};  
+boxLim{2}={[0.51,0.528]*vz,[-35e-3,35e-3],[-35e-3,35e-3]};
+boxLim{3}={[0.528,0.56]*vz,[-35e-3,35e-3],[-35e-3,35e-3]};
