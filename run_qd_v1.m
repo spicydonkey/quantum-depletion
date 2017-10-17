@@ -372,30 +372,30 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Display Histogram
-if verbose>0
-    h_k1D_hist=figure();
-    figure(h_k1D_hist);
-    hold on;
-    
-    for paridx=1:configs.paramset
-        plot(1e-6*hist_k_cyl_1D.binCent{paridx},hist_k_cyl_1D.N{paridx},'.','MarkerSize',10); % Signal
-    end
-    
-    set(gca,'xScale','log');
-    set(gca,'yScale','log');
-    axis tight;
-    box on;
-    grid on;
-    grid minor;
-    
-    title('Histogram');
-    xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('Number in BIN$(k)$');
-%     legend({'RF sweep ON','RF sweep OFF'}); % TODO - modular for param set variability
-    
-%     fname_str='hist_k1D';
-%     saveas(h_k1D_hist,[configs.files.dirout,fname_str,'.png']);
-%     saveas(h_k1D_hist,[configs.files.dirout,fname_str,'.fig']);
-end
+% if verbose>0
+%     h_k1D_hist=figure();
+%     figure(h_k1D_hist);
+%     hold on;
+%     
+%     for paridx=1:configs.paramset
+%         plot(1e-6*hist_k_cyl_1D.binCent{paridx},hist_k_cyl_1D.N{paridx},'.','MarkerSize',10); % Signal
+%     end
+%     
+%     set(gca,'xScale','log');
+%     set(gca,'yScale','log');
+%     axis tight;
+%     box on;
+%     grid on;
+%     grid minor;
+%     
+%     title('Histogram');
+%     xlabel('$k$ [$\mu$m$^{-1}$]'); ylabel('Number in BIN$(k)$');
+% %     legend({'RF sweep ON','RF sweep OFF'}); % TODO - modular for param set variability
+%     
+% %     fname_str='hist_k1D';
+% %     saveas(h_k1D_hist,[configs.files.dirout,fname_str,'.png']);
+% %     saveas(h_k1D_hist,[configs.files.dirout,fname_str,'.fig']);
+% end
 
 %% Display far-field k-space density profile
 if verbose>0
@@ -468,17 +468,17 @@ for idxparam=1:configs.paramset
     % apply smoothing filter
     Nk_sm{idxparam}=conv(Nk_sm{idxparam},g_filt{idxparam},'same');
     
-    %% Plot
-    if verbose>0
-        figure(h_k1D_hist);
-%         legend_str_this=sprintf('%d gauss smooth [%d]',idxparam,configs.smooth.nspan);
-%         plot(1e-6*hist_k_cyl_1D.binCent{idxparam},Nk_sm{idxparam},...
-%             'o','MarkerSize',10,'DisplayName',legend_str_this);
-%         legend(gca,'off')
-%         legend(gca,'show');
-    plot(1e-6*hist_k_cyl_1D.binCent{idxparam},Nk_sm{idxparam},...
-        'o','MarkerSize',10);
-    end
+    %% Plot smoothed histogram
+%     if verbose>0
+%         figure(h_k1D_hist);
+% %         legend_str_this=sprintf('%d gauss smooth [%d]',idxparam,configs.smooth.nspan);
+% %         plot(1e-6*hist_k_cyl_1D.binCent{idxparam},Nk_sm{idxparam},...
+% %             'o','MarkerSize',10,'DisplayName',legend_str_this);
+% %         legend(gca,'off')
+% %         legend(gca,'show');
+%     plot(1e-6*hist_k_cyl_1D.binCent{idxparam},Nk_sm{idxparam},...
+%         'o','MarkerSize',10);
+%     end
 end
 
 % Smoothed density profile
@@ -519,6 +519,42 @@ nk=nk_sm{1};            % evaluated density at k-point
 % %     % legend
 % %     ax_nk_shaded.mainLine.DisplayName='Smoothed data';
 % end
+
+%% FIT CONDENSATE - TF
+% get region
+I_tf=zeros(1,2);        % [min,max] index lims
+for idx=1:2    
+    [~,I_tf(idx)]=min(abs(k-configs.fit.tf.k_lim(idx)));
+end
+
+% get data to fit and scale
+k_fit.tf.k=k(I_tf(1):I_tf(2))*1e-6;         % [um^-1]
+k_fit.tf.nk=nk(I_tf(1):I_tf(2))*1e18;       % [um^3]
+
+k_fit.tf.fit=fitnlm(k_fit.tf.k,k_fit.tf.nk,configs.fit.tf.fun,...
+    configs.fit.tf.param0,...
+    'CoefficientNames',configs.fit.tf.coefname,...
+    'Options',configs.fit.tf.opt);
+
+disp(k_fit.tf.fit);
+
+% fitted model
+extrap_temp=configs.fit.tf.extrap;
+k_fit.tf.k_fit=linspace(min(k_fit.tf.k)/extrap_temp,...
+    max(k_fit.tf.k)*extrap_temp,1e3);
+k_fit.tf.nk_fit=feval(k_fit.tf.fit,k_fit.tf.k_fit);
+
+% Plot
+figure(h_nk_cyl_1D_log); hold on;
+coeffnames=k_fit.tf.fit.CoefficientNames;
+dispname=sprintf('TF: (%s,%s)=(%0.2g,%0.2g)\n SE(%0.1g,%0.1g)',...
+    coeffnames{:},k_fit.tf.fit.Coefficients.Estimate,...
+    k_fit.tf.fit.Coefficients.SE);
+% plot(1e-6*k_fit.thermal.k_fit,1e18*exp(k_fit.thermal.lg_nk_fit),...
+%     ':','LineWidth',2,'DisplayName',dispname);
+plot(k_fit.tf.k_fit,k_fit.tf.nk_fit,...
+    '-','LineWidth',2,'Color','k');
+
 
 %% FIT THERMAL DEPLETION density profile
 %%%%%%%%%%% LOGARITHMIC
