@@ -64,6 +64,20 @@ configs.smooth.nspan=5;
 
 %% Fit to large-k tail
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% BEC - Thomas Fermi
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% config fit
+configs.fit.tf.k_lim=[0,3e6];
+configs.fit.tf.extrap=1.3;
+
+configs.fit.tf.fun=@(p,x1) max(p(1)*(1-(x1/p(2)).^2),0);
+configs.fit.tf.coefname={'n0_infty','R'};
+configs.fit.tf.param0=[2e4,2];
+configs.fit.tf.opt=statset('TolFun',1e-20,'TolX',1e-20,'MaxIter',1e5);
+% NOTE: fitted to rescaled (k,nk) in ([um^(-1)],[um^3])
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Thermal depletion
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fitting region
