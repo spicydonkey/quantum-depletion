@@ -5,7 +5,7 @@ clear all; close all; clc;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% USER INPUTS
-fname_config='config_run6.m';       % name of config file to use (located in $QD_REPO/configs)
+fname_config='config_run7.m';       % name of config file to use (located in $QD_REPO/configs)
 
 % path_config='C:\Users\HE BEC\Documents\MATLAB\quantum-depletion\configs\config_run7.m';
 
@@ -25,6 +25,7 @@ vars_save={'configs','path_config',...
     'k_1D_cyl',...
     'hist_k_cyl_1D','nden_k_cyl_1D',...
     'nk','nk_se'...
+    'k_fit',...
     };
 
 
